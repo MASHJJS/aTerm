@@ -17,13 +17,14 @@ interface Props {
   onToggleMaximize?: () => void;
   onClose?: () => void;
   canClose?: boolean;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 const DEFAULT_FONT_SIZE = 13;
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 32;
 
-export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, isMaximized, onToggleMaximize, onClose, canClose }: Props) {
+export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, isMaximized, onToggleMaximize, onClose, canClose, dragHandleProps }: Props) {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -173,8 +174,15 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
   }
 
   return (
-    <div style={styles.container} onClick={onFocus} onKeyDownCapture={handleKeyDown}>
-      <div style={styles.header}>
+    <div
+      style={styles.container}
+      onClick={onFocus}
+      onKeyDownCapture={handleKeyDown}
+    >
+      <div
+        style={styles.header}
+        {...dragHandleProps}
+      >
         <div style={styles.titleRow}>
           {accentColor && (
             <span style={{ ...styles.indicator, backgroundColor: accentColor }} />
@@ -226,6 +234,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "center",
     flexShrink: 0,
+    cursor: "grab",
   },
   titleRow: {
     display: "flex",

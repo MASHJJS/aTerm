@@ -60,7 +60,6 @@ export function ProjectSidebar({
     <>
       <div style={styles.sidebar}>
         <div style={styles.header}>
-          <span style={styles.logo}>aTerm</span>
           <div style={styles.headerActions}>
             <button
               onClick={() => setShowSettings(true)}

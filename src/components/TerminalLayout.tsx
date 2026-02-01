@@ -1,4 +1,20 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { TerminalPane } from "./TerminalPane";
 import type { ProjectConfig } from "../lib/config";
 import type { Layout, LayoutRow, LayoutPane } from "../lib/layouts";
@@ -23,25 +39,139 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
   const [showProfileSubmenu, setShowProfileSubmenu] = useState<"vertical" | "horizontal" | null>(null);
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
   const [maximizedPaneId, setMaximizedPaneId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
-  // Listen for Shift+Cmd+Enter to toggle maximize
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  // Listen for keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.shiftKey && e.metaKey && e.key === "Enter") {
         e.preventDefault();
         if (maximizedPaneId) {
-          // Already maximized, restore
           setMaximizedPaneId(null);
         } else if (focusedPaneId) {
-          // Maximize the focused pane
           setMaximizedPaneId(focusedPaneId);
         }
+        return;
+      }
+
+      if (e.metaKey && e.key === "d") {
+        e.preventDefault();
+        if (focusedPaneId) {
+          splitPaneWithShell(focusedPaneId);
+        }
+        return;
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focusedPaneId, maximizedPaneId]);
+  }, [focusedPaneId, maximizedPaneId, layout]);
+
+  function splitPaneWithShell(paneId: string) {
+    const row = layout.rows.find((r) => r.panes.some((p) => p.id === paneId));
+    if (!row) return;
+
+    const newPane: LayoutPane = {
+      id: crypto.randomUUID(),
+      profileId: "shell",
+      flex: 1,
+    };
+
+    const paneIndex = row.panes.findIndex((p) => p.id === paneId);
+    const newRows = layout.rows.map((r) => {
+      if (r.id !== row.id) return r;
+      const newPanes = [...r.panes];
+      newPanes.splice(paneIndex + 1, 0, newPane);
+      return { ...r, panes: newPanes };
+    });
+
+    onLayoutChange({ ...layout, rows: newRows });
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDragId(event.active.id as string);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Find which row contains the active pane
+    let sourceRowId: string | null = null;
+    let sourcePane: LayoutPane | null = null;
+
+    for (const row of layout.rows) {
+      const pane = row.panes.find((p) => p.id === activeId);
+      if (pane) {
+        sourceRowId = row.id;
+        sourcePane = pane;
+        break;
+      }
+    }
+
+    if (!sourceRowId || !sourcePane) return;
+
+    // Find which row contains the target pane
+    let targetRowId: string | null = null;
+    let targetIndex = -1;
+
+    for (const row of layout.rows) {
+      const idx = row.panes.findIndex((p) => p.id === overId);
+      if (idx !== -1) {
+        targetRowId = row.id;
+        targetIndex = idx;
+        break;
+      }
+    }
+
+    if (!targetRowId || targetIndex === -1) return;
+
+    // Reorder within the same row
+    if (sourceRowId === targetRowId) {
+      const newRows = layout.rows.map((row) => {
+        if (row.id !== sourceRowId) return row;
+
+        const oldIndex = row.panes.findIndex((p) => p.id === activeId);
+        const newPanes = [...row.panes];
+        newPanes.splice(oldIndex, 1);
+        newPanes.splice(targetIndex, 0, sourcePane!);
+        return { ...row, panes: newPanes };
+      });
+
+      onLayoutChange({ ...layout, rows: newRows });
+    } else {
+      // Move between rows
+      let newRows = layout.rows.map((row) => {
+        if (row.id === sourceRowId) {
+          return { ...row, panes: row.panes.filter((p) => p.id !== activeId) };
+        }
+        if (row.id === targetRowId) {
+          const newPanes = [...row.panes];
+          newPanes.splice(targetIndex, 0, sourcePane!);
+          return { ...row, panes: newPanes };
+        }
+        return row;
+      });
+
+      // Remove empty rows
+      newRows = newRows.filter((row) => row.panes.length > 0);
+      onLayoutChange({ ...layout, rows: newRows });
+    }
+  }
 
   function handleContextMenu(e: React.MouseEvent, paneId: string, rowId: string) {
     e.preventDefault();
@@ -65,11 +195,9 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
 
     const newRows = layout.rows.map((row) => {
       if (row.id !== contextMenu.rowId) return row;
-
       const paneIndex = row.panes.findIndex((p) => p.id === contextMenu.paneId);
       const newPanes = [...row.panes];
       newPanes.splice(paneIndex + 1, 0, newPane);
-
       return { ...row, panes: newPanes };
     });
 
@@ -86,33 +214,23 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
     const newRow: LayoutRow = {
       id: crypto.randomUUID(),
       flex: currentRow.flex,
-      panes: [
-        {
-          id: crypto.randomUUID(),
-          profileId,
-          flex: 1,
-        },
-      ],
+      panes: [{ id: crypto.randomUUID(), profileId, flex: 1 }],
     };
 
     const newRows = [...layout.rows];
     newRows.splice(rowIndex + 1, 0, newRow);
-
     onLayoutChange({ ...layout, rows: newRows });
     closeContextMenu();
   }
 
   function closePaneById(paneId: string, rowId: string) {
     const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
-    if (totalPanes <= 1) return; // Don't close the last pane
+    if (totalPanes <= 1) return;
 
     const newRows = layout.rows
       .map((row) => {
         if (row.id !== rowId) return row;
-        return {
-          ...row,
-          panes: row.panes.filter((p) => p.id !== paneId),
-        };
+        return { ...row, panes: row.panes.filter((p) => p.id !== paneId) };
       })
       .filter((row) => row.panes.length > 0);
 
@@ -127,123 +245,128 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
 
   const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
 
+  // Get all pane IDs for the single sortable context
+  const allPaneIds = layout.rows.flatMap((row) => row.panes.map((p) => p.id));
+
+  // Find the active pane for drag overlay
+  const activePane = activeDragId
+    ? layout.rows.flatMap((r) => r.panes).find((p) => p.id === activeDragId)
+    : null;
+  const activeProfile = activePane
+    ? profiles.find((p) => p.id === activePane.profileId)
+    : null;
+
   return (
-    <div style={styles.container}>
-      {layout.rows.map((row, rowIndex) => (
-        <RowWithResizer
-          key={row.id}
-          row={row}
-          rowIndex={rowIndex}
-          totalRows={layout.rows.length}
-          totalPanes={totalPanes}
-          project={project}
-          profiles={profiles}
-          layout={layout}
-          onLayoutChange={onLayoutChange}
-          onContextMenu={handleContextMenu}
-          onPaneFocus={setFocusedPaneId}
-          maximizedPaneId={maximizedPaneId}
-          onToggleMaximize={(paneId) => {
-            setMaximizedPaneId((current) => (current === paneId ? null : paneId));
-          }}
-          onClosePane={closePaneById}
-        />
-      ))}
-
-      {contextMenu && (
-        <>
-          <div style={styles.contextOverlay} onClick={closeContextMenu} />
-          <div
-            style={{
-              ...styles.contextMenu,
-              left: contextMenu.x,
-              top: contextMenu.y,
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={allPaneIds} strategy={rectSortingStrategy}>
+        <div style={styles.container}>
+          {layout.rows.map((row, rowIndex) => (
+          <RowWithResizer
+            key={row.id}
+            row={row}
+            rowIndex={rowIndex}
+            totalRows={layout.rows.length}
+            totalPanes={totalPanes}
+            project={project}
+            profiles={profiles}
+            layout={layout}
+            onLayoutChange={onLayoutChange}
+            onContextMenu={handleContextMenu}
+            onPaneFocus={setFocusedPaneId}
+            maximizedPaneId={maximizedPaneId}
+            onToggleMaximize={(paneId) => {
+              setMaximizedPaneId((current) => (current === paneId ? null : paneId));
             }}
-          >
+            onClosePane={closePaneById}
+          />
+        ))}
+
+        {contextMenu && (
+          <>
+            <div style={styles.contextOverlay} onClick={closeContextMenu} />
             <div
-              style={styles.contextMenuItem}
-              onMouseEnter={() => setShowProfileSubmenu("vertical")}
+              style={{
+                ...styles.contextMenu,
+                left: contextMenu.x,
+                top: contextMenu.y,
+              }}
             >
-              <span>Split Vertical</span>
-              <span style={styles.menuArrow}>▸</span>
-              {showProfileSubmenu === "vertical" && (
-                <div style={styles.submenu}>
-                  <button
-                    style={styles.submenuItem}
-                    onClick={() => splitVertical("shell")}
-                  >
-                    Shell (default)
-                  </button>
-                  <div style={styles.submenuDivider} />
-                  {profiles.map((p) => (
-                    <button
-                      key={p.id}
-                      style={styles.submenuItem}
-                      onClick={() => splitVertical(p.id)}
-                    >
-                      <span
-                        style={{
-                          ...styles.profileDot,
-                          backgroundColor: p.color,
-                        }}
-                      />
-                      {p.name}
+              <div
+                style={styles.contextMenuItem}
+                onMouseEnter={() => setShowProfileSubmenu("vertical")}
+              >
+                <span>Split Vertical</span>
+                <span style={styles.menuArrow}>▸</span>
+                {showProfileSubmenu === "vertical" && (
+                  <div style={styles.submenu}>
+                    <button style={styles.submenuItem} onClick={() => splitVertical("shell")}>
+                      Shell (default)
                     </button>
-                  ))}
-                </div>
+                    <div style={styles.submenuDivider} />
+                    {profiles.map((p) => (
+                      <button key={p.id} style={styles.submenuItem} onClick={() => splitVertical(p.id)}>
+                        <span style={{ ...styles.profileDot, backgroundColor: p.color }} />
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={styles.contextMenuItem}
+                onMouseEnter={() => setShowProfileSubmenu("horizontal")}
+              >
+                <span>Split Horizontal</span>
+                <span style={styles.menuArrow}>▸</span>
+                {showProfileSubmenu === "horizontal" && (
+                  <div style={styles.submenu}>
+                    <button style={styles.submenuItem} onClick={() => splitHorizontal("shell")}>
+                      Shell (default)
+                    </button>
+                    <div style={styles.submenuDivider} />
+                    {profiles.map((p) => (
+                      <button key={p.id} style={styles.submenuItem} onClick={() => splitHorizontal(p.id)}>
+                        <span style={{ ...styles.profileDot, backgroundColor: p.color }} />
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {totalPanes > 1 && (
+                <>
+                  <div style={styles.menuDivider} />
+                  <button
+                    style={styles.contextMenuItemButton}
+                    onClick={closePane}
+                    onMouseEnter={() => setShowProfileSubmenu(null)}
+                  >
+                    Close Pane
+                  </button>
+                </>
               )}
             </div>
+          </>
+        )}
+        </div>
+      </SortableContext>
 
-            <div
-              style={styles.contextMenuItem}
-              onMouseEnter={() => setShowProfileSubmenu("horizontal")}
-            >
-              <span>Split Horizontal</span>
-              <span style={styles.menuArrow}>▸</span>
-              {showProfileSubmenu === "horizontal" && (
-                <div style={styles.submenu}>
-                  <button
-                    style={styles.submenuItem}
-                    onClick={() => splitHorizontal("shell")}
-                  >
-                    Shell (default)
-                  </button>
-                  <div style={styles.submenuDivider} />
-                  {profiles.map((p) => (
-                    <button
-                      key={p.id}
-                      style={styles.submenuItem}
-                      onClick={() => splitHorizontal(p.id)}
-                    >
-                      <span
-                        style={{
-                          ...styles.profileDot,
-                          backgroundColor: p.color,
-                        }}
-                      />
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {totalPanes > 1 && (
-              <>
-                <div style={styles.menuDivider} />
-                <button
-                  style={styles.contextMenuItemButton}
-                  onClick={closePane}
-                  onMouseEnter={() => setShowProfileSubmenu(null)}
-                >
-                  Close Pane
-                </button>
-              </>
-            )}
+      <DragOverlay>
+        {activeDragId && activeProfile && (
+          <div style={styles.dragOverlay}>
+            <span style={{ ...styles.profileDot, backgroundColor: activeProfile.color }} />
+            {activeProfile.name}
           </div>
-        </>
-      )}
-    </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }
 
@@ -300,7 +423,6 @@ function RowWithResizer({
       const onMouseMove = (e: MouseEvent) => {
         const deltaY = e.clientY - startY;
         const deltaFlex = (deltaY / totalHeight) * totalFlex * 2;
-
         const newCurrentFlex = Math.max(0.1, startCurrentFlex + deltaFlex);
         const newNextFlex = Math.max(0.1, startNextFlex - deltaFlex);
 
@@ -333,7 +455,7 @@ function RowWithResizer({
           const isLast = paneIndex === row.panes.length - 1;
 
           return (
-            <PaneWithResizer
+            <SortablePane
               key={pane.id}
               paneId={pane.id}
               paneIndex={paneIndex}
@@ -387,7 +509,7 @@ interface PaneProps {
   canClose: boolean;
 }
 
-function PaneWithResizer({
+function SortablePane({
   paneId,
   paneIndex,
   flex,
@@ -405,13 +527,29 @@ function PaneWithResizer({
   onClosePane,
   canClose,
 }: PaneProps) {
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingResize, setIsDraggingResize] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: paneId,
+  });
+
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   const handlePaneResize = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      setIsDragging(true);
+      setIsDraggingResize(true);
 
       const startX = e.clientX;
       const container = containerRef.current?.parentElement;
@@ -427,7 +565,6 @@ function PaneWithResizer({
       const onMouseMove = (e: MouseEvent) => {
         const deltaX = e.clientX - startX;
         const deltaFlex = (deltaX / totalWidth) * totalFlex * 2;
-
         const newCurrentFlex = Math.max(0.1, startCurrentFlex + deltaFlex);
         const newNextFlex = Math.max(0.1, startNextFlex - deltaFlex);
 
@@ -447,7 +584,7 @@ function PaneWithResizer({
       };
 
       const onMouseUp = () => {
-        setIsDragging(false);
+        setIsDraggingResize(false);
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
       };
@@ -475,8 +612,15 @@ function PaneWithResizer({
   return (
     <>
       <div
-        ref={containerRef}
-        style={paneStyle}
+        ref={(node) => {
+          setNodeRef(node);
+          (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }}
+        style={{
+          ...paneStyle,
+          ...sortableStyle,
+          ...(isDragging ? { opacity: 0.5 } : {}),
+        }}
         onContextMenu={onContextMenu}
       >
         <TerminalPane
@@ -490,6 +634,7 @@ function PaneWithResizer({
           onToggleMaximize={onToggleMaximize}
           onClose={onClosePane}
           canClose={canClose}
+          dragHandleProps={{ ...attributes, ...listeners }}
         />
         {isMaximized && (
           <button
@@ -505,7 +650,7 @@ function PaneWithResizer({
         <div
           style={{
             ...styles.paneResizer,
-            ...(isDragging ? styles.resizerActive : {}),
+            ...(isDraggingResize ? styles.resizerActive : {}),
             ...(isHidden ? { visibility: "hidden" as const } : {}),
           }}
           onMouseDown={handlePaneResize}
@@ -534,6 +679,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     minWidth: 0,
     minHeight: 0,
+    position: "relative",
   },
   paneMaximized: {
     position: "absolute",
@@ -679,5 +825,17 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 110,
     opacity: 0.7,
     transition: "opacity 0.15s ease",
+  },
+  dragOverlay: {
+    padding: "8px 12px",
+    backgroundColor: "var(--bg-tertiary)",
+    border: "1px solid var(--accent)",
+    borderRadius: "6px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "12px",
+    color: "var(--text)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
   },
 };
