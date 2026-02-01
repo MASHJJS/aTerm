@@ -12,6 +12,9 @@ interface SectionProps {
   onDiscard?: (file: GitFile) => void;
   onStageAll?: () => void;
   onUnstageAll?: () => void;
+  onViewInModal?: (file: GitFile) => void;
+  onEdit?: (file: GitFile) => void;
+  onOpenInEditor?: (file: GitFile, editor: string) => void;
 }
 
 function FileSection({
@@ -24,6 +27,9 @@ function FileSection({
   onDiscard,
   onStageAll,
   onUnstageAll,
+  onViewInModal,
+  onEdit,
+  onOpenInEditor,
 }: SectionProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -67,6 +73,9 @@ function FileSection({
               onStage={onStage ? () => onStage(file) : undefined}
               onUnstage={onUnstage ? () => onUnstage(file) : undefined}
               onDiscard={onDiscard ? () => onDiscard(file) : undefined}
+              onViewInModal={onViewInModal ? () => onViewInModal(file) : undefined}
+              onEdit={onEdit ? () => onEdit(file) : undefined}
+              onOpenInEditor={onOpenInEditor ? (editor) => onOpenInEditor(file, editor) : undefined}
             />
           ))}
         </div>
@@ -86,6 +95,9 @@ interface Props {
   onDiscardFile: (file: GitFile) => void;
   onStageAll: () => void;
   onUnstageAll: () => void;
+  onViewInModal: (file: GitFile) => void;
+  onEdit: (file: GitFile) => void;
+  onOpenInEditor: (file: GitFile, editor: string) => void;
 }
 
 export function FileChanges({
@@ -99,6 +111,9 @@ export function FileChanges({
   onDiscardFile,
   onStageAll,
   onUnstageAll,
+  onViewInModal,
+  onEdit,
+  onOpenInEditor,
 }: Props) {
   const hasChanges = staged.length > 0 || unstaged.length > 0 || untracked.length > 0;
 
@@ -120,6 +135,9 @@ export function FileChanges({
         onSelectFile={onSelectFile}
         onUnstage={onUnstageFile}
         onUnstageAll={staged.length > 0 ? onUnstageAll : undefined}
+        onViewInModal={onViewInModal}
+        onEdit={onEdit}
+        onOpenInEditor={onOpenInEditor}
       />
       <FileSection
         title="Changes"
@@ -131,6 +149,9 @@ export function FileChanges({
         onStageAll={unstaged.length > 0 ? () => {
           unstaged.forEach(f => onStageFile(f));
         } : undefined}
+        onViewInModal={onViewInModal}
+        onEdit={onEdit}
+        onOpenInEditor={onOpenInEditor}
       />
       <FileSection
         title="Untracked"
@@ -142,6 +163,9 @@ export function FileChanges({
         onStageAll={untracked.length > 0 ? () => {
           onStageAll();
         } : undefined}
+        onViewInModal={onViewInModal}
+        onEdit={onEdit}
+        onOpenInEditor={onOpenInEditor}
       />
     </div>
   );

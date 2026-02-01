@@ -5,6 +5,8 @@ import { PaneHeader } from "../PaneHeader";
 import { GitPanelTabs, GitTab } from "./GitPanelTabs";
 import { FileChanges } from "./FileChanges";
 import { DiffViewer } from "./DiffViewer";
+import { DiffModal } from "./DiffModal";
+import { FileEditor } from "./FileEditor";
 import { CommitForm } from "./CommitForm";
 import { CommitHistory } from "./CommitHistory";
 
@@ -28,6 +30,9 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
   const [diff, setDiff] = useState<string>("");
   const [isCommitting, setIsCommitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalFile, setModalFile] = useState<GitFile | null>(null);
+  const [modalDiff, setModalDiff] = useState<string>("");
+  const [editorFile, setEditorFile] = useState<GitFile | null>(null);
   const pollRef = useRef<number | null>(null);
 
   const loadStatus = useCallback(async () => {
@@ -143,6 +148,40 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
     }
   }
 
+  async function handleViewInModal(file: GitFile) {
+    try {
+      const diffContent = await invoke<string>("get_file_diff", {
+        path: cwd,
+        file: file.path,
+        staged: file.staged,
+      });
+      setModalDiff(diffContent);
+      setModalFile(file);
+    } catch (err) {
+      console.error("Failed to load diff for modal:", err);
+    }
+  }
+
+  function handleEdit(file: GitFile) {
+    setEditorFile(file);
+  }
+
+  async function handleOpenInEditor(file: GitFile, editor: string) {
+    try {
+      const fullPath = `${cwd}/${file.path}`;
+      await invoke("open_in_editor", { path: fullPath, editor });
+    } catch (err) {
+      console.error("Failed to open in editor:", err);
+    }
+  }
+
+  function handleEditorSave() {
+    loadStatus();
+    if (selectedFile) {
+      loadDiff(selectedFile);
+    }
+  }
+
   async function handleCommit(message: string) {
     setIsCommitting(true);
     try {
@@ -227,6 +266,9 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
                   onDiscardFile={handleDiscardFile}
                   onStageAll={handleStageAll}
                   onUnstageAll={handleUnstageAll}
+                  onViewInModal={handleViewInModal}
+                  onEdit={handleEdit}
+                  onOpenInEditor={handleOpenInEditor}
                 />
               )}
             </div>
@@ -243,6 +285,28 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
         </div>
       ) : (
         <CommitHistory cwd={cwd} />
+      )}
+
+      <DiffModal
+        isOpen={modalFile !== null}
+        onClose={() => setModalFile(null)}
+        diff={modalDiff}
+        fileName={modalFile?.path || ""}
+        onEdit={modalFile ? () => {
+          setEditorFile(modalFile);
+          setModalFile(null);
+        } : undefined}
+        onOpenInEditor={modalFile ? (editor) => {
+          handleOpenInEditor(modalFile, editor);
+        } : undefined}
+      />
+
+      {editorFile && (
+        <FileEditor
+          filePath={`${cwd}/${editorFile.path}`}
+          onClose={() => setEditorFile(null)}
+          onSave={handleEditorSave}
+        />
       )}
     </div>
   );

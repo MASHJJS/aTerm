@@ -610,6 +610,52 @@ fn get_commit_diff(path: String, hash: String, file: Option<String>) -> Result<S
 }
 
 #[tauri::command]
+fn open_in_editor(path: String, editor: Option<String>) -> Result<(), String> {
+    let editor = editor.unwrap_or_else(|| "default".to_string());
+
+    let result = match editor.as_str() {
+        "vscode" | "code" => {
+            std::process::Command::new("code")
+                .arg(&path)
+                .spawn()
+        }
+        "cursor" => {
+            std::process::Command::new("cursor")
+                .arg(&path)
+                .spawn()
+        }
+        _ => {
+            // Use system default - 'open' on macOS
+            #[cfg(target_os = "macos")]
+            {
+                std::process::Command::new("open")
+                    .arg("-t") // Open in default text editor
+                    .arg(&path)
+                    .spawn()
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                std::process::Command::new("xdg-open")
+                    .arg(&path)
+                    .spawn()
+            }
+        }
+    };
+
+    result.map(|_| ()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_file_content(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn write_file_content(path: String, content: String) -> Result<(), String> {
+    fs::write(&path, content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn clone_repo(url: String, destination: String) -> Result<String, String> {
     let output = std::process::Command::new("git")
         .args(["clone", &url, &destination])
@@ -772,6 +818,9 @@ pub fn run() {
             get_commit_history,
             get_commit_files,
             get_commit_diff,
+            open_in_editor,
+            read_file_content,
+            write_file_content,
             spawn_pty,
             write_pty,
             resize_pty,
