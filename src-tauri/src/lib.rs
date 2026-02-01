@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::{AppHandle, Emitter};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder, PredefinedMenuItem};
 
 // ============================================================================
 // Config - stored as flexible JSON to allow frontend to manage schema
@@ -784,6 +785,54 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Create custom menu with Cmd+W bound to close-pane instead of close-window
+            let handle = app.handle().clone();
+            let close_pane = MenuItemBuilder::new("Close Pane")
+                .id("close-pane")
+                .accelerator("CmdOrCtrl+W")
+                .build(app)?;
+
+            let file_menu = SubmenuBuilder::new(app, "File")
+                .item(&close_pane)
+                .separator()
+                .item(&PredefinedMenuItem::close_window(app, Some("Close Window"))?)
+                .separator()
+                .item(&PredefinedMenuItem::quit(app, Some("Quit"))?)
+                .build()?;
+
+            let edit_menu = SubmenuBuilder::new(app, "Edit")
+                .item(&PredefinedMenuItem::undo(app, None)?)
+                .item(&PredefinedMenuItem::redo(app, None)?)
+                .separator()
+                .item(&PredefinedMenuItem::cut(app, None)?)
+                .item(&PredefinedMenuItem::copy(app, None)?)
+                .item(&PredefinedMenuItem::paste(app, None)?)
+                .item(&PredefinedMenuItem::select_all(app, None)?)
+                .build()?;
+
+            let window_menu = SubmenuBuilder::new(app, "Window")
+                .item(&PredefinedMenuItem::minimize(app, None)?)
+                .item(&PredefinedMenuItem::maximize(app, None)?)
+                .separator()
+                .item(&PredefinedMenuItem::fullscreen(app, None)?)
+                .build()?;
+
+            let menu = MenuBuilder::new(app)
+                .item(&file_menu)
+                .item(&edit_menu)
+                .item(&window_menu)
+                .build()?;
+
+            app.set_menu(menu)?;
+
+            // Handle menu events
+            app.on_menu_event(move |_app, event| {
+                if event.id().as_ref() == "close-pane" {
+                    let _ = handle.emit("close-pane", ());
+                }
+            });
+
             Ok(())
         })
         .run(tauri::generate_context!())

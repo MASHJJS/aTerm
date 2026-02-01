@@ -4,6 +4,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useTheme } from "../context/ThemeContext";
+import { PaneHeader } from "./PaneHeader";
 import "@xterm/xterm/css/xterm.css";
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
   command?: string;
   accentColor?: string;
   onFocus?: () => void;
+  isFocused?: boolean;
   isMaximized?: boolean;
   onToggleMaximize?: () => void;
   onClose?: () => void;
@@ -24,18 +26,19 @@ const DEFAULT_FONT_SIZE = 13;
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 32;
 
-export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, isMaximized, onToggleMaximize, onClose, canClose, dragHandleProps }: Props) {
+export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, isFocused, isMaximized, onToggleMaximize, onClose, canClose, dragHandleProps }: Props) {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const spawnedRef = useRef(false);
   const onToggleMaximizeRef = useRef(onToggleMaximize);
+  const onFocusRef = useRef(onFocus);
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
-  const [closeHovered, setCloseHovered] = useState(false);
 
-  // Keep the ref updated with latest callback
+  // Keep the refs updated with latest callbacks
   onToggleMaximizeRef.current = onToggleMaximize;
+  onFocusRef.current = onFocus;
 
   useEffect(() => {
     if (!containerRef.current || spawnedRef.current) return;
@@ -91,6 +94,12 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
       return true; // Let terminal handle all other keys
     });
 
+    // Trigger focus when clicking in terminal area
+    const handleTerminalClick = () => {
+      onFocusRef.current?.();
+    };
+    terminal.element?.addEventListener("click", handleTerminalClick);
+
     let resizeTimeout: number;
     const resizeObserver = new ResizeObserver(() => {
       clearTimeout(resizeTimeout);
@@ -108,6 +117,7 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
     return () => {
       clearTimeout(resizeTimeout);
       unlisten.then((fn) => fn());
+      terminal.element?.removeEventListener("click", handleTerminalClick);
       resizeObserver.disconnect();
       invoke("kill_pty", { id }).catch(console.error);
       terminal.dispose();
@@ -179,37 +189,15 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
       onClick={onFocus}
       onKeyDownCapture={handleKeyDown}
     >
-      <div
-        style={styles.header}
-        {...dragHandleProps}
-      >
-        <div style={styles.titleRow}>
-          {accentColor && (
-            <span style={{ ...styles.indicator, backgroundColor: accentColor }} />
-          )}
-          <span style={styles.title}>{title}</span>
-        </div>
-        <div style={styles.headerRight}>
-          <span style={styles.path}>{cwd.split("/").pop()}</span>
-          {canClose && (
-            <button
-              style={{
-                ...styles.closeButton,
-                ...(closeHovered ? { opacity: 1, backgroundColor: "var(--bg-tertiary)" } : {}),
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose?.();
-              }}
-              onMouseEnter={() => setCloseHovered(true)}
-              onMouseLeave={() => setCloseHovered(false)}
-              title="Close pane"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      </div>
+      <PaneHeader
+        title={title}
+        subtitle={cwd.split("/").pop()}
+        accentColor={accentColor}
+        isFocused={isFocused}
+        canClose={canClose}
+        onClose={onClose}
+        dragHandleProps={dragHandleProps}
+      />
       <div ref={containerRef} style={styles.terminal} />
     </div>
   );
@@ -225,56 +213,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "8px",
     border: "1px solid var(--border-subtle)",
     overflow: "hidden",
-  },
-  header: {
-    padding: "8px 12px",
-    backgroundColor: "var(--bg-secondary)",
-    borderBottom: "1px solid var(--border-subtle)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexShrink: 0,
-    cursor: "grab",
-  },
-  titleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  indicator: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    flexShrink: 0,
-  },
-  title: {
-    fontSize: "12px",
-    fontWeight: 500,
-    color: "var(--text)",
-  },
-  path: {
-    fontSize: "11px",
-    color: "var(--text-subtle)",
-  },
-  headerRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  closeButton: {
-    width: "18px",
-    height: "18px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "16px",
-    cursor: "pointer",
-    opacity: 0.6,
-    transition: "opacity 0.15s ease, background-color 0.15s ease",
   },
   terminal: {
     flex: 1,

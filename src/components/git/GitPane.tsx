@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { GitStatus, GitFile } from "../../lib/git";
+import { PaneHeader } from "../PaneHeader";
 import { GitPanelTabs, GitTab } from "./GitPanelTabs";
 import { FileChanges } from "./FileChanges";
 import { DiffViewer } from "./DiffViewer";
@@ -12,6 +13,7 @@ interface Props {
   cwd: string;
   accentColor?: string;
   onFocus?: () => void;
+  isFocused?: boolean;
   onClose?: () => void;
   canClose?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
@@ -19,14 +21,13 @@ interface Props {
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
-export function GitPane({ cwd, accentColor, onFocus, onClose, canClose, dragHandleProps }: Props) {
+export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClose, dragHandleProps }: Props) {
   const [activeTab, setActiveTab] = useState<GitTab>("changes");
   const [status, setStatus] = useState<GitStatus | null>(null);
   const [selectedFile, setSelectedFile] = useState<GitFile | null>(null);
   const [diff, setDiff] = useState<string>("");
   const [isCommitting, setIsCommitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [closeHovered, setCloseHovered] = useState(false);
   const pollRef = useRef<number | null>(null);
 
   const loadStatus = useCallback(async () => {
@@ -76,7 +77,6 @@ export function GitPane({ cwd, accentColor, onFocus, onClose, canClose, dragHand
     try {
       await invoke("stage_files", { path: cwd, files: [file.path] });
       await loadStatus();
-      // If we were viewing this file, update to show staged diff
       if (selectedFile?.path === file.path) {
         const updatedFile = { ...file, staged: true };
         setSelectedFile(updatedFile);
@@ -91,7 +91,6 @@ export function GitPane({ cwd, accentColor, onFocus, onClose, canClose, dragHand
     try {
       await invoke("unstage_files", { path: cwd, files: [file.path] });
       await loadStatus();
-      // If we were viewing this file, update to show unstaged diff
       if (selectedFile?.path === file.path) {
         const updatedFile = { ...file, staged: false };
         setSelectedFile(updatedFile);
@@ -187,37 +186,24 @@ export function GitPane({ cwd, accentColor, onFocus, onClose, canClose, dragHand
     </>
   ) : null;
 
+  const refreshButton = (
+    <button style={styles.refreshButton} onClick={() => loadStatus()} title="Refresh">
+      ↻
+    </button>
+  );
+
   return (
     <div style={styles.container} onClick={onFocus}>
-      <div style={styles.header} {...dragHandleProps}>
-        <div style={styles.titleRow}>
-          {accentColor && <span style={{ ...styles.indicator, backgroundColor: accentColor }} />}
-          <span style={styles.title}>Git</span>
-          {branchDisplay}
-        </div>
-        <div style={styles.headerRight}>
-          <button style={styles.refreshButton} onClick={() => loadStatus()} title="Refresh">
-            ↻
-          </button>
-          {canClose && (
-            <button
-              style={{
-                ...styles.closeButton,
-                ...(closeHovered ? { opacity: 1, backgroundColor: "var(--bg-tertiary)" } : {}),
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose?.();
-              }}
-              onMouseEnter={() => setCloseHovered(true)}
-              onMouseLeave={() => setCloseHovered(false)}
-              title="Close pane"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      </div>
+      <PaneHeader
+        title="Git"
+        accentColor={accentColor}
+        isFocused={isFocused}
+        canClose={canClose}
+        onClose={onClose}
+        dragHandleProps={dragHandleProps}
+        titleExtra={branchDisplay}
+        actions={refreshButton}
+      />
 
       <GitPanelTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -273,32 +259,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid var(--border-subtle)",
     overflow: "hidden",
   },
-  header: {
-    padding: "8px 12px",
-    backgroundColor: "var(--bg-secondary)",
-    borderBottom: "1px solid var(--border-subtle)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexShrink: 0,
-    cursor: "grab",
-  },
-  titleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  indicator: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    flexShrink: 0,
-  },
-  title: {
-    fontSize: "12px",
-    fontWeight: 500,
-    color: "var(--text)",
-  },
   branch: {
     fontSize: "11px",
     color: "#61afef",
@@ -318,11 +278,6 @@ const styles: Record<string, React.CSSProperties> = {
   behind: {
     color: "#e06c75",
   },
-  headerRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  },
   refreshButton: {
     width: "22px",
     height: "22px",
@@ -336,21 +291,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     cursor: "pointer",
     opacity: 0.6,
-  },
-  closeButton: {
-    width: "18px",
-    height: "18px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "16px",
-    cursor: "pointer",
-    opacity: 0.6,
-    transition: "opacity 0.15s ease, background-color 0.15s ease",
   },
   changesContainer: {
     display: "flex",

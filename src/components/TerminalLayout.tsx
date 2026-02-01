@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import {
   DndContext,
   DragEndEvent,
@@ -76,6 +77,23 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [focusedPaneId, maximizedPaneId, layout]);
+
+  // Listen for close-pane event from Rust (Cmd+W)
+  useEffect(() => {
+    const unlisten = listen("close-pane", () => {
+      const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
+      if (focusedPaneId && totalPanes > 1) {
+        const row = layout.rows.find((r) => r.panes.some((p) => p.id === focusedPaneId));
+        if (row) {
+          closePaneById(focusedPaneId, row.id);
+        }
+      }
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [focusedPaneId, layout]);
 
   function splitPaneWithShell(paneId: string) {
     const row = layout.rows.find((r) => r.panes.some((p) => p.id === paneId));
@@ -279,6 +297,7 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
             onLayoutChange={onLayoutChange}
             onContextMenu={handleContextMenu}
             onPaneFocus={setFocusedPaneId}
+            focusedPaneId={focusedPaneId}
             maximizedPaneId={maximizedPaneId}
             onToggleMaximize={(paneId) => {
               setMaximizedPaneId((current) => (current === paneId ? null : paneId));
@@ -382,6 +401,7 @@ interface RowProps {
   onLayoutChange: (layout: Layout) => void;
   onContextMenu: (e: React.MouseEvent, paneId: string, rowId: string) => void;
   onPaneFocus: (paneId: string) => void;
+  focusedPaneId: string | null;
   maximizedPaneId: string | null;
   onToggleMaximize: (paneId: string) => void;
   onClosePane: (paneId: string, rowId: string) => void;
@@ -398,6 +418,7 @@ function RowWithResizer({
   onLayoutChange,
   onContextMenu,
   onPaneFocus,
+  focusedPaneId,
   maximizedPaneId,
   onToggleMaximize,
   onClosePane,
@@ -469,6 +490,7 @@ function RowWithResizer({
               onLayoutChange={onLayoutChange}
               onContextMenu={(e) => onContextMenu(e, pane.id, row.id)}
               onFocus={() => onPaneFocus(pane.id)}
+              isFocused={focusedPaneId === pane.id}
               isMaximized={maximizedPaneId === pane.id}
               isHidden={maximizedPaneId !== null && maximizedPaneId !== pane.id}
               onToggleMaximize={() => onToggleMaximize(pane.id)}
@@ -503,6 +525,7 @@ interface PaneProps {
   onLayoutChange: (layout: Layout) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onFocus: () => void;
+  isFocused: boolean;
   isMaximized: boolean;
   isHidden: boolean;
   onToggleMaximize: () => void;
@@ -522,6 +545,7 @@ function SortablePane({
   onLayoutChange,
   onContextMenu,
   onFocus,
+  isFocused,
   isMaximized,
   isHidden,
   onToggleMaximize,
@@ -630,6 +654,7 @@ function SortablePane({
             cwd={project.path}
             accentColor={profile.color}
             onFocus={onFocus}
+            isFocused={isFocused}
             onClose={onClosePane}
             canClose={canClose}
             dragHandleProps={{ ...attributes, ...listeners }}
@@ -642,6 +667,7 @@ function SortablePane({
             command={profile.command}
             accentColor={profile.color}
             onFocus={onFocus}
+            isFocused={isFocused}
             isMaximized={isMaximized}
             onToggleMaximize={onToggleMaximize}
             onClose={onClosePane}
