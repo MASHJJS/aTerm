@@ -88,6 +88,7 @@ npm run tauri build    # Production build
 - Conventional commits (feat, fix, docs, etc.)
 - TypeScript strict mode
 - Tailwind CSS + shadcn/ui for styling (following LumifyHub conventions)
+- **Always run `npx tsc --noEmit` after finishing a feature** to catch type errors before committing
 
 ## Design System
 
@@ -115,7 +116,7 @@ Themes are defined in `globals.css` with CSS variables:
 
 ### Theme Switching
 Set `data-theme` attribute on `<html>`:
-- `midnight` (default), `dracula`, `nord`, `tokyoNight`, `gruvbox`
+- `midnight` (default), `dracula`, `nord`, `tokyoNight`, `gruvbox`, `oneDark`, `catppuccin`, `monokai`, `solarized`, `rosePine`
 
 ### Conventions (from LumifyHub)
 - Use `cn()` for conditional classes: `cn("base", condition && "active")`
