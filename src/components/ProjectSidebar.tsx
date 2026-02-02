@@ -10,6 +10,24 @@ import { AddProjectModal } from "./AddProjectModal";
 import { SettingsModal } from "./SettingsModal";
 import { ProjectSettingsModal } from "./ProjectSettingsModal";
 
+// Calculate relative luminance to determine if text should be light or dark
+function getLuminance(hex: string): number {
+  const color = hex.replace("#", "");
+  const r = parseInt(color.slice(0, 2), 16) / 255;
+  const g = parseInt(color.slice(2, 4), 16) / 255;
+  const b = parseInt(color.slice(4, 6), 16) / 255;
+
+  const [rs, gs, bs] = [r, g, b].map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  );
+
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+function shouldUseLightText(bgColor: string): boolean {
+  return getLuminance(bgColor) < 0.5;
+}
+
 interface Props {
   config: AppConfig;
   selectedProject: ProjectConfig | null;
@@ -143,29 +161,44 @@ export function ProjectSidebar({
           ) : (
             filtered.map((project) => {
               const layout = config.layouts.find((l) => l.id === project.layoutId);
+              const isSelected = selectedProject?.id === project.id;
+              const useColorBg = isSelected && project.color;
+              const useLightText = useColorBg ? shouldUseLightText(project.color!) : false;
               return (
                 <button
                   key={project.id}
                   onClick={() => onSelectProject(project)}
                   onContextMenu={(e) => handleContextMenu(e, project)}
                   className={cn(
-                    "w-full px-3 py-2.5 flex items-center gap-2.5 bg-transparent border-none rounded-md text-foreground cursor-pointer text-left mb-0.5 transition-colors hover:bg-accent",
-                    selectedProject?.id === project.id && "bg-accent"
+                    "w-full px-3 py-2.5 flex items-center gap-2.5 bg-transparent border-none rounded-md cursor-pointer text-left mb-0.5 transition-colors",
+                    !useColorBg && "text-foreground hover:bg-accent",
+                    isSelected && !useColorBg && "bg-accent"
                   )}
+                  style={useColorBg ? { backgroundColor: project.color } : undefined}
                 >
                   {project.icon ? (
                     <span className="text-base shrink-0">{project.icon}</span>
-                  ) : project.color ? (
+                  ) : project.color && !isSelected ? (
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: project.color }}
                     />
                   ) : null}
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                    <span className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+                    <span
+                      className={cn(
+                        "text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap",
+                        useLightText ? "text-white" : "text-foreground"
+                      )}
+                    >
                       {project.name}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span
+                      className={cn(
+                        "text-[10px]",
+                        useLightText ? "text-white/70" : "text-muted-foreground"
+                      )}
+                    >
                       {PROVIDERS[project.provider]?.name || project.provider}
                       {layout && ` · ${layout.name}`}
                     </span>
