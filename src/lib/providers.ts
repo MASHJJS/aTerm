@@ -10,6 +10,7 @@ export interface ProviderDefinition {
   supportsResume: boolean;
   modelFlag?: string;
   defaultArgs?: string[];
+  autoApproveFlag?: string; // Flag to skip permission prompts
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
@@ -20,6 +21,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     description: "Anthropic's Claude Code CLI",
     supportsResume: true,
     defaultArgs: [],
+    autoApproveFlag: "--dangerously-skip-permissions",
   },
   opencode: {
     id: "opencode",
@@ -27,6 +29,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     cli: "opencode",
     description: "Open-source AI coding assistant",
     supportsResume: false,
+    autoApproveFlag: undefined, // Managed via config
   },
   codex: {
     id: "codex",
@@ -34,6 +37,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     cli: "codex",
     description: "OpenAI Codex CLI",
     supportsResume: false,
+    autoApproveFlag: "--approval-mode full-auto",
   },
   aider: {
     id: "aider",
@@ -42,6 +46,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     description: "AI pair programming in your terminal",
     supportsResume: false,
     modelFlag: "--model",
+    autoApproveFlag: "--yes",
   },
   cursor: {
     id: "cursor",
@@ -49,6 +54,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     cli: "cursor",
     description: "Cursor AI CLI",
     supportsResume: false,
+    autoApproveFlag: undefined, // Not supported
   },
   gemini: {
     id: "gemini",
@@ -56,6 +62,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     cli: "gemini",
     description: "Google's Gemini CLI",
     supportsResume: false,
+    autoApproveFlag: "--yolo",
   },
   shell: {
     id: "shell",
@@ -63,6 +70,7 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
     cli: "",
     description: "Plain terminal shell",
     supportsResume: false,
+    autoApproveFlag: undefined, // N/A
   },
 };
 
