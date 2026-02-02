@@ -720,8 +720,9 @@ fn spawn_pty(
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
 
     let mut cmd = if let Some(ref command) = command {
+        // Run command, then exec a new shell when it exits
         let mut c = CommandBuilder::new(&shell);
-        c.args(["-i", "-c", command]);
+        c.args(["-i", "-c", &format!("{}; exec {}", command, shell)]);
         c
     } else {
         let mut c = CommandBuilder::new(&shell);
