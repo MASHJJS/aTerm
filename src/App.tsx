@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ProjectSidebar } from "./components/ProjectSidebar";
 import { TerminalLayout } from "./components/TerminalLayout";
 import { ExitConfirmDialog } from "./components/ExitConfirmDialog";
@@ -39,11 +38,8 @@ export default function App() {
   }, []);
 
   async function handleExitConfirm() {
-    // Kill all PTYs first
-    await invoke("kill_all_ptys");
-    // Then close the window
-    const window = getCurrentWindow();
-    await window.destroy();
+    // Force exit - kills all PTYs and exits the process
+    await invoke("force_exit");
   }
 
   function handleExitCancel() {

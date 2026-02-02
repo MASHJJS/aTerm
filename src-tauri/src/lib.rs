@@ -897,6 +897,19 @@ fn kill_all_ptys(state: tauri::State<'_, PtyMap>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn force_exit(state: tauri::State<'_, PtyMap>) {
+    // Kill all PTYs first
+    {
+        let mut ptys = state.lock().unwrap();
+        for (_, mut pty) in ptys.drain() {
+            let _ = pty.child.kill();
+        }
+    }
+    // Exit the process
+    std::process::exit(0);
+}
+
 // ============================================================================
 // App Entry Point
 // ============================================================================
@@ -936,6 +949,7 @@ pub fn run() {
             kill_pty,
             get_active_pty_count,
             kill_all_ptys,
+            force_exit,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
