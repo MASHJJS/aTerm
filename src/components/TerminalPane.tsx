@@ -195,6 +195,16 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
       setFontSize((prev) => Math.max(prev - 1, MIN_FONT_SIZE));
       return;
     }
+
+    // Cmd+K: Clear terminal
+    if (e.metaKey && e.key === "k") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (terminalRef.current) {
+        terminalRef.current.clear();
+      }
+      return;
+    }
   }
 
   return (

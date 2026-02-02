@@ -40,6 +40,7 @@ aTerm gives you predefined layouts optimized for these workflows, with instant p
 | Cmd+W | Close focused pane |
 | Cmd++ | Increase font size |
 | Cmd+- | Decrease font size |
+| Cmd+K | Clear terminal |
 
 ## Default Layouts
 
