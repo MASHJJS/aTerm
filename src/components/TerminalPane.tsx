@@ -19,6 +19,17 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
+// Track spawned PTYs globally so we don't respawn on remount (e.g., after drag)
+const spawnedPtys = new Set<string>();
+
+// Kill a PTY - call this when pane is explicitly closed
+export function killPty(id: string) {
+  if (spawnedPtys.has(id)) {
+    invoke("kill_pty", { id }).catch(console.error);
+    spawnedPtys.delete(id);
+  }
+}
+
 interface Props {
   id: string;
   title: string;
@@ -48,7 +59,6 @@ export function TerminalPane({ id, title, cwd, command, accentColor, defaultFont
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const spawnedRef = useRef(false);
   const onToggleMaximizeRef = useRef(onToggleMaximize);
   const onFocusRef = useRef(onFocus);
   // Use saved font size if available, otherwise use default
@@ -60,8 +70,10 @@ export function TerminalPane({ id, title, cwd, command, accentColor, defaultFont
   onFocusRef.current = onFocus;
 
   useEffect(() => {
-    if (!containerRef.current || spawnedRef.current) return;
-    spawnedRef.current = true;
+    if (!containerRef.current) return;
+
+    // Check if PTY already spawned (survives remounts from drag operations)
+    const ptyAlreadySpawned = spawnedPtys.has(id);
 
     const terminal = new Terminal({
       fontFamily: theme.terminal.fontFamily,
@@ -94,13 +106,17 @@ export function TerminalPane({ id, title, cwd, command, accentColor, defaultFont
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
-    invoke("spawn_pty", {
-      id,
-      cwd,
-      cols: terminal.cols,
-      rows: terminal.rows,
-      command,
-    }).catch(console.error);
+    // Only spawn PTY if not already running (survives drag/drop remounts)
+    if (!ptyAlreadySpawned) {
+      spawnedPtys.add(id);
+      invoke("spawn_pty", {
+        id,
+        cwd,
+        cols: terminal.cols,
+        rows: terminal.rows,
+        command,
+      }).catch(console.error);
+    }
 
     // TextDecoder handles streaming UTF-8 properly (keeps partial sequences for next chunk)
     const decoder = new TextDecoder("utf-8", { fatal: false });
@@ -218,7 +234,8 @@ export function TerminalPane({ id, title, cwd, command, accentColor, defaultFont
       unlisten.then((fn) => fn());
       terminal.element?.removeEventListener("click", handleTerminalClick);
       resizeObserver.disconnect();
-      invoke("kill_pty", { id }).catch(console.error);
+      // Don't kill PTY on unmount - it survives drag/drop remounts
+      // PTY is killed via killPty() when pane is explicitly closed
       terminal.dispose();
     };
   }, [id, cwd, command]);

@@ -29,7 +29,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { TerminalPane } from "./TerminalPane";
+import { TerminalPane, killPty } from "./TerminalPane";
 import { GitPane } from "./git/GitPane";
 import type { ProjectConfig } from "../lib/config";
 import { updatePaneName, type Layout, type LayoutRow, type LayoutPane } from "../lib/layouts";
@@ -380,6 +380,9 @@ export function TerminalLayout({ project, layout, profiles, defaultFontSize, pan
   function closePaneById(paneId: string, rowId: string) {
     const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
     if (totalPanes <= 1) return;
+
+    // Kill the PTY when pane is explicitly closed
+    killPty(`${project.id}-${paneId}`);
 
     const newRows = layout.rows
       .map((row) => {
