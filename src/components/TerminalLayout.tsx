@@ -205,6 +205,94 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
       return;
     }
 
+    // Check if dropping on a pane edge zone (iTerm2-style splitting)
+    if (overId.startsWith("edge-")) {
+      const match = overId.match(/^edge-(left|right|top|bottom)-(.+)$/);
+      if (!match) return;
+
+      const [, position, targetPaneId] = match;
+
+      // Find the target pane's row and index
+      let targetRowId: string | null = null;
+      let targetRowIndex = -1;
+      let targetPaneIndex = -1;
+
+      for (let ri = 0; ri < layout.rows.length; ri++) {
+        const row = layout.rows[ri];
+        const pi = row.panes.findIndex((p) => p.id === targetPaneId);
+        if (pi !== -1) {
+          targetRowId = row.id;
+          targetRowIndex = ri;
+          targetPaneIndex = pi;
+          break;
+        }
+      }
+
+      if (!targetRowId || targetPaneIndex === -1) return;
+
+      const sourceRow = layout.rows.find((r) => r.id === sourceRowId);
+
+      if (position === "left" || position === "right") {
+        // Insert pane into the same row as target
+        const insertAtIndex = position === "left" ? targetPaneIndex : targetPaneIndex + 1;
+
+        let newRows = layout.rows.map((row) => {
+          if (row.id === sourceRowId && row.id !== targetRowId) {
+            // Remove from source row (if different from target)
+            return { ...row, panes: row.panes.filter((p) => p.id !== activeId) };
+          }
+          if (row.id === targetRowId) {
+            const newPanes = row.panes.filter((p) => p.id !== activeId); // Remove if same row
+            newPanes.splice(
+              // Adjust index if we removed from earlier position
+              sourceRowId === targetRowId && row.panes.findIndex((p) => p.id === activeId) < insertAtIndex
+                ? insertAtIndex - 1
+                : insertAtIndex,
+              0,
+              { ...sourcePane, flex: 1 }
+            );
+            return { ...row, panes: newPanes };
+          }
+          return row;
+        });
+
+        // Remove empty rows
+        newRows = newRows.filter((row) => row.panes.length > 0);
+        onLayoutChange({ ...layout, rows: newRows });
+      } else {
+        // top or bottom - create a new row
+        const insertRowIndex = position === "top" ? targetRowIndex : targetRowIndex + 1;
+
+        // Create new row with the pane
+        const newRow: LayoutRow = {
+          id: crypto.randomUUID(),
+          flex: sourceRow?.flex || 1,
+          panes: [{ ...sourcePane, flex: 1 }],
+        };
+
+        // Remove pane from source row
+        let newRows = layout.rows.map((row) => {
+          if (row.id === sourceRowId) {
+            return { ...row, panes: row.panes.filter((p) => p.id !== activeId) };
+          }
+          return row;
+        });
+
+        // Remove empty rows
+        newRows = newRows.filter((row) => row.panes.length > 0);
+
+        // Adjust insert index if source row was removed and was before insert point
+        const sourceRowIdx = layout.rows.findIndex((r) => r.id === sourceRowId);
+        const sourceRowRemoved = layout.rows.find((r) => r.id === sourceRowId)?.panes.length === 1;
+        const adjustedIndex = sourceRowRemoved && sourceRowIdx < insertRowIndex ? insertRowIndex - 1 : insertRowIndex;
+
+        // Insert new row at position
+        newRows.splice(adjustedIndex, 0, newRow);
+        onLayoutChange({ ...layout, rows: newRows });
+      }
+      return;
+    }
+
     // Find which row contains the target pane
     let targetRowId: string | null = null;
     let targetIndex = -1;
@@ -349,6 +437,7 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
                 renamingPaneId={renamingPaneId}
                 onRenamingComplete={() => setRenamingPaneId(null)}
                 onStartRename={(paneId) => setRenamingPaneId(paneId)}
+                activeDragId={activeDragId}
               />
               {/* Drop zone after each row */}
               {activeDragId && <RowDropZone id={`row-drop-${rowIndex + 1}`} />}
@@ -393,6 +482,7 @@ interface RowProps {
   renamingPaneId: string | null;
   onRenamingComplete: () => void;
   onStartRename: (paneId: string) => void;
+  activeDragId: string | null;
 }
 
 function RowWithResizer({
@@ -415,6 +505,7 @@ function RowWithResizer({
   renamingPaneId,
   onRenamingComplete,
   onStartRename,
+  activeDragId,
 }: RowProps) {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -500,6 +591,7 @@ function RowWithResizer({
               triggerRename={renamingPaneId === pane.id}
               onTriggerRenameComplete={onRenamingComplete}
               onStartRename={() => onStartRename(pane.id)}
+              activeDragId={activeDragId}
             />
           );
         })}
@@ -542,6 +634,7 @@ interface PaneProps {
   triggerRename: boolean;
   onTriggerRenameComplete: () => void;
   onStartRename: () => void;
+  activeDragId: string | null;
 }
 
 function SortablePane({
@@ -569,6 +662,7 @@ function SortablePane({
   triggerRename,
   onTriggerRenameComplete,
   onStartRename,
+  activeDragId,
 }: PaneProps) {
   const [isDraggingResize, setIsDraggingResize] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -698,6 +792,9 @@ function SortablePane({
     </>
   );
 
+  // Show edge drop zones when another pane is being dragged (not this one)
+  const showEdgeDropZones = activeDragId !== null && activeDragId !== paneId && !isMaximized;
+
   return (
     <>
       <ContextMenu>
@@ -719,6 +816,11 @@ function SortablePane({
             }}
           >
             {paneContent}
+            {/* Edge drop zones for iTerm2-style drag and drop */}
+            <PaneEdgeDropZone paneId={paneId} position="left" isVisible={showEdgeDropZones} />
+            <PaneEdgeDropZone paneId={paneId} position="right" isVisible={showEdgeDropZones} />
+            <PaneEdgeDropZone paneId={paneId} position="top" isVisible={showEdgeDropZones} />
+            <PaneEdgeDropZone paneId={paneId} position="bottom" isVisible={showEdgeDropZones} />
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
@@ -805,6 +907,57 @@ function RowDropZone({ id }: RowDropZoneProps) {
       )}>
         Drop here for new row
       </span>
+    </div>
+  );
+}
+
+// Edge drop zones for iTerm2-style pane splitting
+type EdgePosition = "left" | "right" | "top" | "bottom";
+
+interface PaneEdgeDropZoneProps {
+  paneId: string;
+  position: EdgePosition;
+  isVisible: boolean;
+}
+
+function PaneEdgeDropZone({ paneId, position, isVisible }: PaneEdgeDropZoneProps) {
+  const dropId = `edge-${position}-${paneId}`;
+  const { setNodeRef, isOver } = useDroppable({ id: dropId });
+
+  if (!isVisible) return null;
+
+  const positionClasses: Record<EdgePosition, string> = {
+    left: "left-0 top-0 bottom-0 w-1/4",
+    right: "right-0 top-0 bottom-0 w-1/4",
+    top: "top-0 left-0 right-0 h-1/4",
+    bottom: "bottom-0 left-0 right-0 h-1/4",
+  };
+
+  const isHorizontal = position === "left" || position === "right";
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "absolute z-10 transition-all duration-150 pointer-events-auto",
+        positionClasses[position],
+        isOver && "bg-primary/30"
+      )}
+    >
+      {isOver && (
+        <div
+          className={cn(
+            "absolute bg-primary",
+            isHorizontal
+              ? "w-1 top-2 bottom-2"
+              : "h-1 left-2 right-2",
+            position === "left" && "left-1",
+            position === "right" && "right-1",
+            position === "top" && "top-1",
+            position === "bottom" && "bottom-1"
+          )}
+        />
+      )}
     </div>
   );
 }
