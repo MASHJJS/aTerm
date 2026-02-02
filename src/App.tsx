@@ -11,6 +11,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<ProjectConfig | null>(null);
   const [openedProjects, setOpenedProjects] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   // Runtime layouts track unsaved changes per project (keyed by project.id)
   const [runtimeLayouts, setRuntimeLayouts] = useState<Record<string, Layout>>({});
 
@@ -33,15 +34,21 @@ export default function App() {
     }
   }, [selectedProject, openedProjects, config.layouts, runtimeLayouts]);
 
-  // Keyboard shortcuts for project switching (Cmd+1 through Cmd+9)
+  // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Cmd+1-9: Switch projects
       if (e.metaKey && e.key >= "1" && e.key <= "9") {
         const index = parseInt(e.key, 10) - 1;
         if (index < config.projects.length) {
           e.preventDefault();
           setSelectedProject(config.projects[index]);
         }
+      }
+      // Cmd+B: Toggle sidebar
+      if (e.metaKey && e.key === "b") {
+        e.preventDefault();
+        setSidebarVisible((prev) => !prev);
       }
     }
 
@@ -185,15 +192,17 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      <ProjectSidebar
-        config={config}
-        selectedProject={selectedProject}
-        onSelectProject={handleSelectProject}
-        onConfigChange={handleConfigChange}
-        onSaveWindowArrangement={handleSaveWindowArrangement}
-        onRestoreWindowArrangement={handleRestoreWindowArrangement}
-        onAddGitPane={handleAddGitPane}
-      />
+      {sidebarVisible && (
+        <ProjectSidebar
+          config={config}
+          selectedProject={selectedProject}
+          onSelectProject={handleSelectProject}
+          onConfigChange={handleConfigChange}
+          onSaveWindowArrangement={handleSaveWindowArrangement}
+          onRestoreWindowArrangement={handleRestoreWindowArrangement}
+          onAddGitPane={handleAddGitPane}
+        />
+      )}
       <div style={styles.main}>
         {openedProjectsList.length > 0 ? (
           // Render all opened projects, hide inactive ones
