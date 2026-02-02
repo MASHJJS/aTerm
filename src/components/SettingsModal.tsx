@@ -215,6 +215,32 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props
                 Use Cmd+Plus/Minus in a terminal to adjust individual panes. Per-pane sizes are remembered.
               </p>
             </div>
+
+            <div className="mb-6">
+              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Scrollback Buffer
+              </h3>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min={1000}
+                  max={100000}
+                  step={1000}
+                  value={config.defaultScrollback ?? 10000}
+                  onChange={(e) => {
+                    const size = Math.min(100000, Math.max(1000, parseInt(e.target.value, 10) || 10000));
+                    onConfigChange({ ...config, defaultScrollback: size });
+                  }}
+                  className="w-24"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Default: 10,000 lines (range: 1k-100k)
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Lines kept in terminal history. Higher values use more memory (~7MB per 10k lines per terminal).
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="profiles" className="flex-1 overflow-auto mt-4">
@@ -482,14 +508,19 @@ function ProfileEditor({
   const [name, setName] = useState(profile.name);
   const [command, setCommand] = useState(profile.command || "");
   const [color, setColor] = useState(profile.color);
+  const [scrollback, setScrollback] = useState<string>(
+    profile.scrollback?.toString() || ""
+  );
 
   function handleSave() {
     if (!name.trim()) return;
+    const scrollbackNum = scrollback ? parseInt(scrollback, 10) : undefined;
     onSave({
       ...profile,
       name: name.trim(),
       command: command.trim() || undefined,
       color,
+      scrollback: scrollbackNum && scrollbackNum >= 1000 ? scrollbackNum : undefined,
     });
   }
 
@@ -536,6 +567,27 @@ function ProfileEditor({
             onChange={(e) => setColor(e.target.value)}
             className="flex-1"
           />
+        </div>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          Scrollback (optional)
+        </span>
+        <div className="flex gap-2 items-center">
+          <Input
+            type="number"
+            min={1000}
+            max={100000}
+            step={1000}
+            value={scrollback}
+            onChange={(e) => setScrollback(e.target.value)}
+            placeholder="Use default"
+            className="w-28"
+          />
+          <span className="text-[10px] text-muted-foreground">
+            Override global scrollback for this profile
+          </span>
         </div>
       </label>
 

@@ -337,6 +337,7 @@ export default function App() {
                   layout={layout}
                   profiles={config.profiles}
                   defaultFontSize={config.defaultFontSize ?? 13}
+                  defaultScrollback={config.defaultScrollback ?? 10000}
                   paneFontSizes={config.paneFontSizes || {}}
                   onPaneFontSizeChange={handlePaneFontSizeChange}
                   onLayoutChange={(newLayout) => {

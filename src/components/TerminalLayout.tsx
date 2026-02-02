@@ -431,6 +431,7 @@ export function TerminalLayout({ project, layout, profiles, defaultFontSize, def
                 profiles={profiles}
                 layout={layout}
                 defaultFontSize={defaultFontSize}
+                defaultScrollback={defaultScrollback}
                 paneFontSizes={paneFontSizes}
                 onPaneFontSizeChange={onPaneFontSizeChange}
                 onLayoutChange={onLayoutChange}
@@ -481,6 +482,7 @@ interface RowProps {
   profiles: TerminalProfile[];
   layout: Layout;
   defaultFontSize: number;
+  defaultScrollback: number;
   paneFontSizes: Record<string, number>;
   onPaneFontSizeChange: (paneInstanceId: string, fontSize: number) => void;
   onLayoutChange: (layout: Layout) => void;
@@ -507,6 +509,7 @@ function RowWithResizer({
   profiles,
   layout,
   defaultFontSize,
+  defaultScrollback,
   paneFontSizes,
   onPaneFontSizeChange,
   onLayoutChange,
