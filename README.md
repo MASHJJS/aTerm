@@ -34,6 +34,7 @@ aTerm gives you predefined layouts optimized for these workflows, with instant p
 | Shortcut | Action |
 |----------|--------|
 | Cmd+1-9 | Switch to project 1-9 |
+| Cmd+B | Toggle sidebar |
 | Shift+Cmd+Enter | Maximize/restore focused pane |
 | Cmd+D | Split pane with shell |
 | Cmd+W | Close focused pane |
