@@ -56,6 +56,13 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [config.projects]);
 
+  // Save sidebar visibility preference when it changes
+  useEffect(() => {
+    if (!loading && config.sidebarVisible !== sidebarVisible) {
+      updateConfig({ ...config, sidebarVisible });
+    }
+  }, [sidebarVisible]);
+
   async function loadConfig() {
     try {
       const savedConfig = await invoke<AppConfig | null>("load_config");
@@ -68,6 +75,7 @@ export default function App() {
           layouts: savedConfig.layouts?.length ? savedConfig.layouts : DEFAULT_CONFIG.layouts,
         };
         setConfig(merged);
+        setSidebarVisible(merged.sidebarVisible !== false);
         if (merged.projects.length > 0) {
           setSelectedProject(merged.projects[0]);
         }

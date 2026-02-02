@@ -18,6 +18,7 @@ export interface AppConfig {
   layouts: Layout[];
   defaultProvider: ProviderId;
   defaultLayoutId: string;
+  sidebarVisible?: boolean;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -26,6 +27,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   layouts: DEFAULT_LAYOUTS,
   defaultProvider: "claude",
   defaultLayoutId: "ai-shell",
+  sidebarVisible: true,
 };
 
 export function createProject(
