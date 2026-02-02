@@ -1,3 +1,9 @@
+---
+name: release
+description: Cut a new release (build, sign, notarize, publish to GitHub)
+allowed-tools: Bash, Read, Edit
+---
+
 # Release Skill
 
 Use this skill when the user says "cut a release", "release", "cut a new release", "publish a release", or similar.
