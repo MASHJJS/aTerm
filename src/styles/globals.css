@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default: Midnight theme (dark) */
+    --background: 240 20% 4%;
+    --foreground: 240 5% 90%;
+
+    --card: 240 15% 7%;
+    --card-foreground: 240 5% 90%;
+
+    --popover: 240 15% 8%;
+    --popover-foreground: 240 5% 90%;
+
+    --primary: 255 70% 68%;
+    --primary-foreground: 240 20% 4%;
+
+    --secondary: 240 15% 12%;
+    --secondary-foreground: 240 5% 90%;
+
+    --muted: 240 15% 12%;
+    --muted-foreground: 240 10% 55%;
+
+    --accent: 240 15% 15%;
+    --accent-foreground: 240 5% 90%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 15% 18%;
+    --input: 240 15% 10%;
+    --ring: 255 70% 68%;
+
+    --radius: 0.5rem;
+
+    /* Terminal-specific colors */
+    --terminal-bg: 240 20% 4%;
+    --terminal-fg: 240 5% 90%;
+    --terminal-cursor: 255 70% 68%;
+
+    /* Status colors */
+    --success: 135 60% 65%;
+    --warning: 55 90% 75%;
+    --error: 0 70% 55%;
+  }
+
+  /* Dracula theme */
+  [data-theme="dracula"] {
+    --background: 231 15% 18%;
+    --foreground: 60 30% 96%;
+
+    --card: 232 14% 14%;
+    --card-foreground: 60 30% 96%;
+
+    --popover: 231 15% 20%;
+    --popover-foreground: 60 30% 96%;
+
+    --primary: 265 89% 78%;
+    --primary-foreground: 231 15% 18%;
+
+    --secondary: 232 14% 25%;
+    --secondary-foreground: 60 30% 96%;
+
+    --muted: 232 14% 25%;
+    --muted-foreground: 225 27% 51%;
+
+    --accent: 231 15% 28%;
+    --accent-foreground: 60 30% 96%;
+
+    --destructive: 0 100% 67%;
+    --destructive-foreground: 60 30% 96%;
+
+    --border: 232 14% 30%;
+    --input: 232 14% 16%;
+    --ring: 265 89% 78%;
+
+    --terminal-bg: 231 15% 18%;
+    --terminal-fg: 60 30% 96%;
+    --terminal-cursor: 60 30% 96%;
+  }
+
+  /* Nord theme */
+  [data-theme="nord"] {
+    --background: 220 16% 22%;
+    --foreground: 218 27% 94%;
+
+    --card: 220 16% 18%;
+    --card-foreground: 218 27% 94%;
+
+    --popover: 220 16% 24%;
+    --popover-foreground: 218 27% 94%;
+
+    --primary: 193 43% 67%;
+    --primary-foreground: 220 16% 22%;
+
+    --secondary: 220 17% 27%;
+    --secondary-foreground: 218 27% 94%;
+
+    --muted: 220 17% 27%;
+    --muted-foreground: 219 14% 59%;
+
+    --accent: 220 16% 30%;
+    --accent-foreground: 218 27% 94%;
+
+    --destructive: 354 42% 56%;
+    --destructive-foreground: 218 27% 94%;
+
+    --border: 220 17% 32%;
+    --input: 220 16% 20%;
+    --ring: 193 43% 67%;
+
+    --terminal-bg: 220 16% 22%;
+    --terminal-fg: 218 27% 94%;
+    --terminal-cursor: 218 27% 94%;
+  }
+
+  /* Tokyo Night theme */
+  [data-theme="tokyoNight"] {
+    --background: 235 21% 13%;
+    --foreground: 230 75% 85%;
+
+    --card: 235 21% 9%;
+    --card-foreground: 230 75% 85%;
+
+    --popover: 235 21% 15%;
+    --popover-foreground: 230 75% 85%;
+
+    --primary: 224 71% 71%;
+    --primary-foreground: 235 21% 13%;
+
+    --secondary: 230 17% 20%;
+    --secondary-foreground: 230 75% 85%;
+
+    --muted: 230 17% 20%;
+    --muted-foreground: 230 13% 45%;
+
+    --accent: 230 17% 24%;
+    --accent-foreground: 230 75% 85%;
+
+    --destructive: 353 73% 72%;
+    --destructive-foreground: 230 75% 85%;
+
+    --border: 229 18% 28%;
+    --input: 230 17% 16%;
+    --ring: 224 71% 71%;
+
+    --terminal-bg: 235 21% 13%;
+    --terminal-fg: 230 75% 85%;
+    --terminal-cursor: 230 75% 85%;
+  }
+
+  /* Gruvbox theme */
+  [data-theme="gruvbox"] {
+    --background: 0 6% 11%;
+    --foreground: 48 45% 81%;
+
+    --card: 20 5% 14%;
+    --card-foreground: 48 45% 81%;
+
+    --popover: 20 5% 18%;
+    --popover-foreground: 48 45% 81%;
+
+    --primary: 27 99% 55%;
+    --primary-foreground: 0 6% 11%;
+
+    --secondary: 20 6% 22%;
+    --secondary-foreground: 48 45% 81%;
+
+    --muted: 20 6% 22%;
+    --muted-foreground: 30 10% 48%;
+
+    --accent: 20 6% 26%;
+    --accent-foreground: 48 45% 81%;
+
+    --destructive: 6 96% 59%;
+    --destructive-foreground: 48 45% 81%;
+
+    --border: 20 6% 28%;
+    --input: 20 5% 16%;
+    --ring: 27 99% 55%;
+
+    --terminal-bg: 0 6% 11%;
+    --terminal-fg: 48 45% 81%;
+    --terminal-cursor: 48 45% 81%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Scrollbar styling */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* Selection */
+::selection {
+  background: hsl(var(--primary) / 0.3);
+  color: hsl(var(--foreground));
+}

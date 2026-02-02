@@ -86,6 +86,39 @@ npm run tauri build    # Production build
 ## Standards
 
 - Conventional commits (feat, fix, docs, etc.)
-- CSS variables for theming (var(--bg), var(--text), etc.)
 - TypeScript strict mode
-- Inline styles with `styles` object pattern
+- Tailwind CSS + shadcn/ui for styling (following LumifyHub conventions)
+
+## Design System
+
+Uses **Tailwind CSS + shadcn/ui**, following the same conventions as LumifyHub:
+
+### Structure
+```
+src/
+├── components/ui/        # shadcn components (Button, Dialog, etc.)
+├── lib/utils.ts          # cn() utility for class merging
+└── styles/globals.css    # Tailwind + CSS variables
+```
+
+### Adding shadcn components
+```bash
+npx shadcn@latest add button dialog dropdown-menu
+```
+
+### CSS Variables (HSL format)
+Themes are defined in `globals.css` with CSS variables:
+- `--background`, `--foreground` - Base colors
+- `--primary`, `--secondary`, `--muted`, `--accent` - UI colors
+- `--destructive` - Danger/error states
+- `--border`, `--input`, `--ring` - Form elements
+
+### Theme Switching
+Set `data-theme` attribute on `<html>`:
+- `midnight` (default), `dracula`, `nord`, `tokyoNight`, `gruvbox`
+
+### Conventions (from LumifyHub)
+- Use `cn()` for conditional classes: `cn("base", condition && "active")`
+- Prefer shadcn components over custom implementations
+- Use semantic color names (`bg-primary` not `bg-purple-500`)
+- Keep component files under 300 lines

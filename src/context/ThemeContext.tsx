@@ -19,24 +19,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem("aterm-theme", themeId);
 
-    // Apply CSS variables to root
+    // Set data-theme attribute for CSS variable switching
     const root = document.documentElement;
-    const { colors } = theme;
+    root.setAttribute("data-theme", themeId);
 
-    root.style.setProperty("--bg", colors.bg);
-    root.style.setProperty("--bg-secondary", colors.bgSecondary);
-    root.style.setProperty("--bg-tertiary", colors.bgTertiary);
-    root.style.setProperty("--border", colors.border);
-    root.style.setProperty("--border-subtle", colors.borderSubtle);
-    root.style.setProperty("--text", colors.text);
-    root.style.setProperty("--text-muted", colors.textMuted);
-    root.style.setProperty("--text-subtle", colors.textSubtle);
-    root.style.setProperty("--accent", colors.accent);
-    root.style.setProperty("--accent-hover", colors.accentHover);
-    root.style.setProperty("--accent-muted", colors.accentMuted);
-    root.style.setProperty("--success", colors.success);
-    root.style.setProperty("--warning", colors.warning);
-    root.style.setProperty("--error", colors.error);
+    // Also set class for dark mode (all themes are dark in aTerm)
+    root.classList.add("dark");
   }, [theme, themeId]);
 
   return (
