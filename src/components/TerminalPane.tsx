@@ -29,12 +29,30 @@ function base64ToUint8Array(base64: string): Uint8Array {
 // Track spawned PTYs globally so we don't respawn on remount (e.g., after drag)
 const spawnedPtys = new Set<string>();
 
-// Kill a PTY - call this when pane is explicitly closed
+// Track Terminal instances globally so buffer survives remount (e.g., after drag)
+interface TerminalInstance {
+  terminal: Terminal;
+  fitAddon: FitAddon;
+  searchAddon: SearchAddon;
+  serializeAddon: SerializeAddon;
+  unlisten: (() => void) | null;
+}
+const terminalInstances = new Map<string, TerminalInstance>();
+
+// Kill a PTY and dispose terminal - call this when pane is explicitly closed
 export function killPty(id: string) {
   if (spawnedPtys.has(id)) {
     invoke("kill_pty", { id }).catch(console.error);
     spawnedPtys.delete(id);
   }
+  // Also dispose the terminal instance
+  const instance = terminalInstances.get(id);
+  if (instance) {
+    instance.unlisten?.();
+    instance.terminal.dispose();
+    terminalInstances.delete(id);
+  }
+  serializeRefs.delete(id);
 }
 
 interface Props {
@@ -95,68 +113,150 @@ export function TerminalPane({ id, title, cwd, command, accentColor, projectColo
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Check if PTY already spawned (survives remounts from drag operations)
-    const ptyAlreadySpawned = spawnedPtys.has(id);
+    // Check if terminal instance already exists (survives remounts from drag operations)
+    let instance = terminalInstances.get(id);
+    let terminal: Terminal;
+    let fitAddon: FitAddon;
+    let searchAddon: SearchAddon;
+    let serializeAddon: SerializeAddon;
+    let isNewInstance = false;
 
-    const terminal = new Terminal({
-      fontFamily: theme.terminal.fontFamily,
-      fontSize: savedFontSize ?? defaultFontSize,
-      cursorBlink: true,
-      allowProposedApi: true,
-      theme: theme.terminal.theme,
-      scrollback,
-    });
+    if (instance) {
+      // Reuse existing terminal - just reattach to new DOM element
+      terminal = instance.terminal;
+      fitAddon = instance.fitAddon;
+      searchAddon = instance.searchAddon;
+      serializeAddon = instance.serializeAddon;
 
-    const fitAddon = new FitAddon();
-    terminal.loadAddon(fitAddon);
+      // Reattach terminal to new container
+      // xterm.js doesn't have a direct reattach, so we move the element
+      if (terminal.element && containerRef.current) {
+        containerRef.current.appendChild(terminal.element);
+      }
+    } else {
+      // Create new terminal instance
+      isNewInstance = true;
 
-    terminal.open(containerRef.current);
-
-    // Try to load WebGL addon for GPU-accelerated rendering (2-3x faster)
-    try {
-      const webglAddon = new WebglAddon();
-      webglAddon.onContextLoss(() => {
-        webglAddon.dispose();
+      terminal = new Terminal({
+        fontFamily: theme.terminal.fontFamily,
+        fontSize: savedFontSize ?? defaultFontSize,
+        cursorBlink: true,
+        allowProposedApi: true,
+        theme: theme.terminal.theme,
+        scrollback,
       });
-      terminal.loadAddon(webglAddon);
-    } catch (e) {
-      console.warn("WebGL addon failed to load, using default renderer:", e);
+
+      fitAddon = new FitAddon();
+      terminal.loadAddon(fitAddon);
+
+      terminal.open(containerRef.current);
+
+      // Try to load WebGL addon for GPU-accelerated rendering (2-3x faster)
+      try {
+        const webglAddon = new WebglAddon();
+        webglAddon.onContextLoss(() => {
+          webglAddon.dispose();
+        });
+        terminal.loadAddon(webglAddon);
+      } catch (e) {
+        console.warn("WebGL addon failed to load, using default renderer:", e);
+      }
+
+      // Cmd+click to open URLs in default browser (like iTerm2)
+      const webLinksAddon = new WebLinksAddon((event, uri) => {
+        if (event.metaKey) {
+          open(uri).catch(console.error);
+        }
+      });
+      terminal.loadAddon(webLinksAddon);
+
+      // Search addon for Cmd+F search functionality
+      searchAddon = new SearchAddon();
+      terminal.loadAddon(searchAddon);
+
+      // Clipboard addon for OSC 52 remote clipboard support
+      const clipboardAddon = new ClipboardAddon();
+      terminal.loadAddon(clipboardAddon);
+
+      // Serialize addon for exporting terminal output
+      serializeAddon = new SerializeAddon();
+      terminal.loadAddon(serializeAddon);
+
+      // Custom key event handler for special key combinations
+      terminal.attachCustomKeyEventHandler((e) => {
+        if (e.type !== "keydown") return true;
+
+        // Shift+Cmd+Enter: Toggle maximize
+        if (e.shiftKey && e.metaKey && (e.key === "Enter" || e.keyCode === 13)) {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleMaximizeRef.current?.();
+          return false;
+        }
+
+        // Shift+Enter: Send literal newline for multi-line input (e.g., Claude Code)
+        if (e.shiftKey && !e.metaKey && !e.ctrlKey && e.key === "Enter") {
+          invoke("write_pty", { id, data: "\n" }).catch(console.error);
+          return false;
+        }
+
+        // Cmd+Left: Go to beginning of line (sends Ctrl+A)
+        if (e.metaKey && !e.shiftKey && e.key === "ArrowLeft") {
+          e.preventDefault();
+          invoke("write_pty", { id, data: "\x01" }).catch(console.error);
+          return false;
+        }
+
+        // Cmd+Right: Go to end of line (sends Ctrl+E)
+        if (e.metaKey && !e.shiftKey && e.key === "ArrowRight") {
+          e.preventDefault();
+          invoke("write_pty", { id, data: "\x05" }).catch(console.error);
+          return false;
+        }
+
+        // Option+Left: Move back one word (sends Escape+b)
+        if (e.altKey && !e.metaKey && !e.ctrlKey && e.key === "ArrowLeft") {
+          e.preventDefault();
+          invoke("write_pty", { id, data: "\x1bb" }).catch(console.error);
+          return false;
+        }
+
+        // Option+Right: Move forward one word (sends Escape+f)
+        if (e.altKey && !e.metaKey && !e.ctrlKey && e.key === "ArrowRight") {
+          e.preventDefault();
+          invoke("write_pty", { id, data: "\x1bf" }).catch(console.error);
+          return false;
+        }
+
+        return true; // Let terminal handle all other keys
+      });
+
+      terminal.onData((data) => {
+        invoke("write_pty", { id, data }).catch(console.error);
+      });
     }
 
-    // Cmd+click to open URLs in default browser (like iTerm2)
-    const webLinksAddon = new WebLinksAddon((event, uri) => {
-      if (event.metaKey) {
-        open(uri).catch(console.error);
-      }
-    });
-    terminal.loadAddon(webLinksAddon);
-
-    // Search addon for Cmd+F search functionality
-    const searchAddon = new SearchAddon();
-    terminal.loadAddon(searchAddon);
+    // Set up refs
+    terminalRef.current = terminal;
+    fitAddonRef.current = fitAddon;
     searchAddonRef.current = searchAddon;
-
-    // Clipboard addon for OSC 52 remote clipboard support
-    const clipboardAddon = new ClipboardAddon();
-    terminal.loadAddon(clipboardAddon);
-
-    // Serialize addon for exporting terminal output
-    const serializeAddon = new SerializeAddon();
-    terminal.loadAddon(serializeAddon);
     serializeAddonRef.current = serializeAddon;
 
     // Register serialize function for external access (context menu)
     serializeRefs.set(id, () => serializeAddon.serialize());
 
+    // Fit terminal to container
     requestAnimationFrame(() => {
       fitAddon.fit();
+      invoke("resize_pty", {
+        id,
+        cols: terminal.cols,
+        rows: terminal.rows,
+      }).catch(console.error);
     });
 
-    terminalRef.current = terminal;
-    fitAddonRef.current = fitAddon;
-
     // Only spawn PTY if not already running (survives drag/drop remounts)
-    if (!ptyAlreadySpawned) {
+    if (!spawnedPtys.has(id)) {
       spawnedPtys.add(id);
       invoke("spawn_pty", {
         id,
@@ -167,96 +267,55 @@ export function TerminalPane({ id, title, cwd, command, accentColor, projectColo
       }).catch(console.error);
     }
 
-    // TextDecoder handles streaming UTF-8 properly (keeps partial sequences for next chunk)
-    const decoder = new TextDecoder("utf-8", { fatal: false });
+    // Set up PTY output listener (only for new instances or if previous was cleaned up)
+    let unlistenFn: (() => void) | null = null;
 
-    // Frame batching: accumulate writes and flush on animation frame
-    // This prevents render thrashing during fast output (e.g., cat large file)
-    let pendingData: Uint8Array[] = [];
-    let frameRequested = false;
+    if (isNewInstance || !instance?.unlisten) {
+      // TextDecoder handles streaming UTF-8 properly (keeps partial sequences for next chunk)
+      const decoder = new TextDecoder("utf-8", { fatal: false });
 
-    const flushPendingData = () => {
-      if (pendingData.length === 0) return;
+      // Frame batching: accumulate writes and flush on animation frame
+      // This prevents render thrashing during fast output (e.g., cat large file)
+      let pendingData: Uint8Array[] = [];
+      let frameRequested = false;
 
-      // Concatenate all pending chunks
-      const totalLength = pendingData.reduce((acc, chunk) => acc + chunk.length, 0);
-      const combined = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of pendingData) {
-        combined.set(chunk, offset);
-        offset += chunk.length;
-      }
-      pendingData = [];
-      frameRequested = false;
+      const flushPendingData = () => {
+        if (pendingData.length === 0) return;
 
-      const text = decoder.decode(combined, { stream: true });
-      terminal.write(text);
-    };
+        // Concatenate all pending chunks
+        const totalLength = pendingData.reduce((acc, chunk) => acc + chunk.length, 0);
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of pendingData) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+        pendingData = [];
+        frameRequested = false;
 
-    const unlisten = listen<string>(`pty-output-${id}`, (event) => {
-      // Decode base64 to bytes
-      const bytes = base64ToUint8Array(event.payload);
-      pendingData.push(bytes);
+        const text = decoder.decode(combined, { stream: true });
+        terminal.write(text);
+      };
 
-      // Request animation frame if not already requested
-      if (!frameRequested) {
-        frameRequested = true;
-        requestAnimationFrame(flushPendingData);
-      }
-    });
+      listen<string>(`pty-output-${id}`, (event) => {
+        // Decode base64 to bytes
+        const bytes = base64ToUint8Array(event.payload);
+        pendingData.push(bytes);
 
-    terminal.onData((data) => {
-      invoke("write_pty", { id, data }).catch(console.error);
-    });
-
-    // Custom key event handler for special key combinations
-    terminal.attachCustomKeyEventHandler((e) => {
-      if (e.type !== "keydown") return true;
-
-      // Shift+Cmd+Enter: Toggle maximize
-      if (e.shiftKey && e.metaKey && (e.key === "Enter" || e.keyCode === 13)) {
-        e.preventDefault();
-        e.stopPropagation();
-        onToggleMaximizeRef.current?.();
-        return false;
-      }
-
-      // Shift+Enter: Send literal newline for multi-line input (e.g., Claude Code)
-      if (e.shiftKey && !e.metaKey && !e.ctrlKey && e.key === "Enter") {
-        invoke("write_pty", { id, data: "\n" }).catch(console.error);
-        return false;
-      }
-
-      // Cmd+Left: Go to beginning of line (sends Ctrl+A)
-      if (e.metaKey && !e.shiftKey && e.key === "ArrowLeft") {
-        e.preventDefault();
-        invoke("write_pty", { id, data: "\x01" }).catch(console.error);
-        return false;
-      }
-
-      // Cmd+Right: Go to end of line (sends Ctrl+E)
-      if (e.metaKey && !e.shiftKey && e.key === "ArrowRight") {
-        e.preventDefault();
-        invoke("write_pty", { id, data: "\x05" }).catch(console.error);
-        return false;
-      }
-
-      // Option+Left: Move back one word (sends Escape+b)
-      if (e.altKey && !e.metaKey && !e.ctrlKey && e.key === "ArrowLeft") {
-        e.preventDefault();
-        invoke("write_pty", { id, data: "\x1bb" }).catch(console.error);
-        return false;
-      }
-
-      // Option+Right: Move forward one word (sends Escape+f)
-      if (e.altKey && !e.metaKey && !e.ctrlKey && e.key === "ArrowRight") {
-        e.preventDefault();
-        invoke("write_pty", { id, data: "\x1bf" }).catch(console.error);
-        return false;
-      }
-
-      return true; // Let terminal handle all other keys
-    });
+        // Request animation frame if not already requested
+        if (!frameRequested) {
+          frameRequested = true;
+          requestAnimationFrame(flushPendingData);
+        }
+      }).then((fn) => {
+        unlistenFn = fn;
+        // Update instance with unlisten function
+        const inst = terminalInstances.get(id);
+        if (inst) {
+          inst.unlisten = fn;
+        }
+      });
+    }
 
     // Trigger focus when clicking in terminal area
     const handleTerminalClick = () => {
@@ -264,6 +323,7 @@ export function TerminalPane({ id, title, cwd, command, accentColor, projectColo
     };
     terminal.element?.addEventListener("click", handleTerminalClick);
 
+    // Set up resize observer
     let resizeTimeout: number;
     const resizeObserver = new ResizeObserver(() => {
       clearTimeout(resizeTimeout);
@@ -278,16 +338,21 @@ export function TerminalPane({ id, title, cwd, command, accentColor, projectColo
     });
     resizeObserver.observe(containerRef.current);
 
+    // Store instance globally (create or update)
+    terminalInstances.set(id, {
+      terminal,
+      fitAddon,
+      searchAddon,
+      serializeAddon,
+      unlisten: unlistenFn || instance?.unlisten || null,
+    });
+
     return () => {
       clearTimeout(resizeTimeout);
-      unlisten.then((fn) => fn());
       terminal.element?.removeEventListener("click", handleTerminalClick);
       resizeObserver.disconnect();
-      // Clean up serialize ref
-      serializeRefs.delete(id);
-      // Don't kill PTY on unmount - it survives drag/drop remounts
-      // PTY is killed via killPty() when pane is explicitly closed
-      terminal.dispose();
+      // DON'T dispose terminal or kill PTY - they survive drag/drop remounts
+      // Terminal/PTY is cleaned up via killPty() when pane is explicitly closed
     };
   }, [id, cwd, command]);
 
