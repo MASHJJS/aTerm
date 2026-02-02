@@ -301,11 +301,7 @@ export function TerminalPane({ id, title, cwd, command, accentColor, projectColo
 
   // Refit terminal when maximized state changes
   useEffect(() => {
-    if (fitAddonRef.current && terminalRef.current) {
-      // Save scroll position before resize
-      const terminal = terminalRef.current;
-      const scrollY = terminal.buffer.active.viewportY;
-
+    if (fitAddonRef.current) {
       // Small delay to let CSS transition complete
       const timeout = setTimeout(() => {
         fitAddonRef.current?.fit();
@@ -315,12 +311,6 @@ export function TerminalPane({ id, title, cwd, command, accentColor, projectColo
             cols: terminalRef.current.cols,
             rows: terminalRef.current.rows,
           }).catch(console.error);
-
-          // Restore scroll position after fit
-          // Use requestAnimationFrame to ensure DOM has updated
-          requestAnimationFrame(() => {
-            terminalRef.current?.scrollToLine(scrollY);
-          });
         }
       }, 50);
       return () => clearTimeout(timeout);
