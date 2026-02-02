@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
+import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open } from "@tauri-apps/plugin-shell";
 import { useTheme } from "../context/ThemeContext";
 import { PaneHeader } from "./PaneHeader";
 import "@xterm/xterm/css/xterm.css";
@@ -38,6 +40,7 @@ interface Props {
   accentColor?: string;
   defaultFontSize?: number;
   fontSize?: number;
+  scrollback?: number;
   onFontSizeChange?: (size: number) => void;
   onFocus?: () => void;
   isFocused?: boolean;
@@ -54,7 +57,9 @@ interface Props {
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 32;
 
-export function TerminalPane({ id, title, cwd, command, accentColor, defaultFontSize = 13, fontSize: savedFontSize, onFontSizeChange, onFocus, isFocused, isMaximized, onToggleMaximize, onClose, onRename, triggerRename, onTriggerRenameComplete, canClose, dragHandleProps }: Props) {
+const DEFAULT_SCROLLBACK = 10000;
+
+export function TerminalPane({ id, title, cwd, command, accentColor, defaultFontSize = 13, fontSize: savedFontSize, scrollback = DEFAULT_SCROLLBACK, onFontSizeChange, onFocus, isFocused, isMaximized, onToggleMaximize, onClose, onRename, triggerRename, onTriggerRenameComplete, canClose, dragHandleProps }: Props) {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -81,6 +86,7 @@ export function TerminalPane({ id, title, cwd, command, accentColor, defaultFont
       cursorBlink: true,
       allowProposedApi: true,
       theme: theme.terminal.theme,
+      scrollback,
     });
 
     const fitAddon = new FitAddon();
@@ -98,6 +104,14 @@ export function TerminalPane({ id, title, cwd, command, accentColor, defaultFont
     } catch (e) {
       console.warn("WebGL addon failed to load, using default renderer:", e);
     }
+
+    // Cmd+click to open URLs in default browser (like iTerm2)
+    const webLinksAddon = new WebLinksAddon((event, uri) => {
+      if (event.metaKey) {
+        open(uri).catch(console.error);
+      }
+    });
+    terminal.loadAddon(webLinksAddon);
 
     requestAnimationFrame(() => {
       fitAddon.fit();

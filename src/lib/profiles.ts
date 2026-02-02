@@ -9,6 +9,7 @@ export interface TerminalProfile {
   color: string; // Accent color for pane header
   icon?: string;
   type?: ProfileType; // Defaults to "terminal"
+  scrollback?: number; // Lines to keep in buffer (overrides global default)
 }
 
 // Default profiles that come with aTerm

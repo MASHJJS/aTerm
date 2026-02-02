@@ -61,13 +61,14 @@ interface Props {
   layout: Layout;
   profiles: TerminalProfile[];
   defaultFontSize: number;
+  defaultScrollback: number;
   paneFontSizes: Record<string, number>;
   onPaneFontSizeChange: (paneInstanceId: string, fontSize: number) => void;
   onLayoutChange: (layout: Layout) => void;
   onPersistentLayoutChange?: (layout: Layout) => void;
 }
 
-export function TerminalLayout({ project, layout, profiles, defaultFontSize, paneFontSizes, onPaneFontSizeChange, onLayoutChange, onPersistentLayoutChange }: Props) {
+export function TerminalLayout({ project, layout, profiles, defaultFontSize, defaultScrollback, paneFontSizes, onPaneFontSizeChange, onLayoutChange, onPersistentLayoutChange }: Props) {
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
   const [maximizedPaneId, setMaximizedPaneId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -589,6 +590,7 @@ function RowWithResizer({
               row={row}
               layout={layout}
               defaultFontSize={defaultFontSize}
+              defaultScrollback={defaultScrollback}
               fontSize={paneFontSizes[`${project.id}-${pane.id}`]}
               onFontSizeChange={(size) => onPaneFontSizeChange(`${project.id}-${pane.id}`, size)}
               onLayoutChange={onLayoutChange}
@@ -639,6 +641,7 @@ interface PaneProps {
   row: LayoutRow;
   layout: Layout;
   defaultFontSize: number;
+  defaultScrollback: number;
   fontSize: number | undefined;
   onFontSizeChange: (size: number) => void;
   onLayoutChange: (layout: Layout) => void;
@@ -670,6 +673,7 @@ function SortablePane({
   row,
   layout,
   defaultFontSize,
+  defaultScrollback,
   fontSize,
   onFontSizeChange,
   onLayoutChange,
@@ -792,6 +796,7 @@ function SortablePane({
           accentColor={profile.color}
           defaultFontSize={defaultFontSize}
           fontSize={fontSize}
+          scrollback={profile.scrollback ?? defaultScrollback}
           onFontSizeChange={onFontSizeChange}
           onFocus={onFocus}
           isFocused={isFocused}

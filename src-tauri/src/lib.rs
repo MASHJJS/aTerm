@@ -951,6 +951,7 @@ pub fn run() {
             kill_all_ptys,
             force_exit,
         ])
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

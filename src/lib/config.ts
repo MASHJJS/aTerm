@@ -21,6 +21,7 @@ export interface AppConfig {
   defaultLayoutId: string;
   sidebarVisible?: boolean;
   defaultFontSize?: number;
+  defaultScrollback?: number; // Lines to keep in scrollback buffer (default: 10000)
   // Per-pane font size overrides, keyed by pane instance ID (e.g., "projectId-paneId")
   paneFontSizes?: Record<string, number>;
 }
@@ -33,6 +34,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   defaultLayoutId: "ai-shell",
   sidebarVisible: true,
   defaultFontSize: 13,
+  defaultScrollback: 10000,
   paneFontSizes: {},
 };
 
