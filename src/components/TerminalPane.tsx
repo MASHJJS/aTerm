@@ -185,7 +185,7 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
 
   return (
     <div
-      style={styles.container}
+      className="flex flex-col flex-1 min-h-0 bg-background rounded-lg border border-border overflow-hidden"
       onClick={onFocus}
       onKeyDownCapture={handleKeyDown}
     >
@@ -198,25 +198,7 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
         onClose={onClose}
         dragHandleProps={dragHandleProps}
       />
-      <div ref={containerRef} style={styles.terminal} />
+      <div ref={containerRef} className="flex-1 p-2 overflow-hidden" />
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    minHeight: 0,
-    backgroundColor: "var(--bg)",
-    borderRadius: "8px",
-    border: "1px solid var(--border-subtle)",
-    overflow: "hidden",
-  },
-  terminal: {
-    flex: 1,
-    padding: "8px",
-    overflow: "hidden",
-  },
-};

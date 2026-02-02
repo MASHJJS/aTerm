@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Settings, Plus } from "lucide-react";
 import type { ProjectConfig, AppConfig } from "../lib/config";
 import { PROVIDERS } from "../lib/providers";
 import { AddProjectModal } from "./AddProjectModal";
@@ -58,39 +62,41 @@ export function ProjectSidebar({
 
   return (
     <>
-      <div style={styles.sidebar}>
-        <div style={styles.header}>
-          <div style={styles.headerActions}>
-            <button
+      <div className="w-[220px] bg-secondary border-r border-border flex flex-col">
+        <div className="px-4 py-3.5 flex justify-end items-center border-b border-border">
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setShowSettings(true)}
-              style={styles.iconButton}
               title="Settings"
             >
-              ⚙
-            </button>
-            <button
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setShowAddModal(true)}
-              style={styles.iconButton}
               title="Add Project"
             >
-              +
-            </button>
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        <div style={styles.searchContainer}>
-          <input
+        <div className="p-3">
+          <Input
             type="text"
             placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={styles.search}
+            className="h-8 text-xs"
           />
         </div>
 
-        <div style={styles.list}>
+        <div className="flex-1 overflow-y-auto px-2 py-1">
           {filtered.length === 0 ? (
-            <div style={styles.empty}>
+            <div className="py-5 px-3 text-muted-foreground text-xs text-center">
               {config.projects.length === 0
                 ? "No projects yet"
                 : "No matches"}
@@ -103,16 +109,16 @@ export function ProjectSidebar({
                   key={project.id}
                   onClick={() => onSelectProject(project)}
                   onContextMenu={(e) => handleContextMenu(e, project)}
-                  style={{
-                    ...styles.item,
-                    ...(selectedProject?.id === project.id
-                      ? styles.itemSelected
-                      : {}),
-                  }}
+                  className={cn(
+                    "w-full px-3 py-2.5 flex items-center bg-transparent border-none rounded-md text-foreground cursor-pointer text-left mb-0.5 transition-colors hover:bg-accent",
+                    selectedProject?.id === project.id && "bg-accent"
+                  )}
                 >
-                  <div style={styles.itemContent}>
-                    <span style={styles.name}>{project.name}</span>
-                    <span style={styles.meta}>
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <span className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+                      {project.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
                       {PROVIDERS[project.provider]?.name || project.provider}
                       {layout && ` · ${layout.name}`}
                     </span>
@@ -126,16 +132,19 @@ export function ProjectSidebar({
 
       {contextMenu && (
         <>
-          <div style={styles.contextOverlay} onClick={() => setContextMenu(null)} />
           <div
+            className="fixed inset-0 z-popover"
+            onClick={() => setContextMenu(null)}
+          />
+          <div
+            className="fixed bg-popover border border-border rounded-md shadow-lg z-modal min-w-[120px] p-1 animate-popover-in"
             style={{
-              ...styles.contextMenu,
               left: contextMenu.x,
               top: contextMenu.y,
             }}
           >
             <button
-              style={styles.contextMenuItem}
+              className="w-full px-3 py-2 bg-transparent border-none rounded text-foreground text-xs cursor-pointer text-left transition-colors hover:bg-accent"
               onClick={() => {
                 onSaveWindowArrangement(contextMenu.project.id);
                 setContextMenu(null);
@@ -144,7 +153,7 @@ export function ProjectSidebar({
               Save Window Arrangement
             </button>
             <button
-              style={styles.contextMenuItem}
+              className="w-full px-3 py-2 bg-transparent border-none rounded text-foreground text-xs cursor-pointer text-left transition-colors hover:bg-accent"
               onClick={() => {
                 onRestoreWindowArrangement(contextMenu.project.id);
                 setContextMenu(null);
@@ -152,9 +161,9 @@ export function ProjectSidebar({
             >
               Restore Window Arrangement
             </button>
-            <div style={styles.menuDivider} />
+            <div className="h-px bg-border my-1" />
             <button
-              style={{ ...styles.contextMenuItem, color: "var(--danger, #ef4444)" }}
+              className="w-full px-3 py-2 bg-transparent border-none rounded text-destructive text-xs cursor-pointer text-left transition-colors hover:bg-destructive/10"
               onClick={() => handleRemoveProject(contextMenu.project.id)}
             >
               Remove Project
@@ -179,139 +188,3 @@ export function ProjectSidebar({
     </>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  sidebar: {
-    width: 220,
-    backgroundColor: "var(--bg-secondary)",
-    borderRight: "1px solid var(--border-subtle)",
-    display: "flex",
-    flexDirection: "column",
-  },
-  header: {
-    padding: "14px 16px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottom: "1px solid var(--border-subtle)",
-  },
-  logo: {
-    fontSize: "14px",
-    fontWeight: 600,
-    color: "var(--accent)",
-    letterSpacing: "-0.5px",
-  },
-  headerActions: {
-    display: "flex",
-    gap: "4px",
-  },
-  iconButton: {
-    width: "26px",
-    height: "26px",
-    borderRadius: "4px",
-    border: "none",
-    backgroundColor: "transparent",
-    color: "var(--text-muted)",
-    fontSize: "14px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.15s ease",
-  },
-  searchContainer: {
-    padding: "12px",
-  },
-  search: {
-    width: "100%",
-    padding: "8px 10px",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "6px",
-    color: "var(--text)",
-    fontSize: "12px",
-    outline: "none",
-    transition: "border-color 0.15s ease",
-  },
-  list: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "4px 8px",
-  },
-  empty: {
-    padding: "20px 12px",
-    color: "var(--text-subtle)",
-    fontSize: "12px",
-    textAlign: "center",
-  },
-  item: {
-    width: "100%",
-    padding: "10px 12px",
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "6px",
-    color: "var(--text)",
-    cursor: "pointer",
-    textAlign: "left",
-    marginBottom: "2px",
-    transition: "all 0.15s ease",
-  },
-  itemSelected: {
-    backgroundColor: "var(--accent-muted)",
-  },
-  itemContent: {
-    flex: 1,
-    minWidth: 0,
-    display: "flex",
-    flexDirection: "column",
-    gap: "3px",
-  },
-  name: {
-    fontSize: "13px",
-    fontWeight: 500,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-  meta: {
-    fontSize: "10px",
-    color: "var(--text-muted)",
-  },
-  contextOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
-  },
-  contextMenu: {
-    position: "fixed",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border)",
-    borderRadius: "6px",
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-    zIndex: 1000,
-    minWidth: "120px",
-    padding: "4px",
-  },
-  contextMenuItem: {
-    width: "100%",
-    padding: "8px 12px",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "4px",
-    color: "var(--text)",
-    fontSize: "12px",
-    cursor: "pointer",
-    textAlign: "left",
-    transition: "background-color 0.15s ease",
-  },
-  menuDivider: {
-    height: "1px",
-    backgroundColor: "var(--border-subtle)",
-    margin: "4px 0",
-  },
-};

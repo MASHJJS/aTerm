@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Props {
   hasStaged: boolean;
@@ -34,9 +36,9 @@ export function CommitForm({ hasStaged, onCommit, onCommitAndPush, isCommitting 
   }
 
   return (
-    <div style={styles.container}>
-      <textarea
-        style={styles.textarea}
+    <div className="p-2 border-t border-border bg-secondary">
+      <Textarea
+        className="w-full resize-none text-xs"
         placeholder={hasStaged ? "Commit message..." : "Stage changes to commit"}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -44,76 +46,23 @@ export function CommitForm({ hasStaged, onCommit, onCommitAndPush, isCommitting 
         disabled={!hasStaged || isCommitting}
         rows={2}
       />
-      <div style={styles.buttons}>
-        <button
-          style={{
-            ...styles.button,
-            ...(!canCommit ? styles.buttonDisabled : {}),
-          }}
+      <div className="flex gap-2 mt-2">
+        <Button
+          variant="secondary"
+          className="flex-1 text-xs"
           onClick={handleCommit}
           disabled={!canCommit}
         >
           {isCommitting ? "Committing..." : "Commit"}
-        </button>
-        <button
-          style={{
-            ...styles.button,
-            ...styles.pushButton,
-            ...(!canCommit ? styles.buttonDisabled : {}),
-          }}
+        </Button>
+        <Button
+          className="flex-1 text-xs bg-orange-500 hover:bg-orange-600 text-white"
           onClick={handleCommitAndPush}
           disabled={!canCommit}
         >
           Commit & Push
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    padding: "8px",
-    borderTop: "1px solid var(--border-subtle)",
-    backgroundColor: "var(--bg-secondary)",
-  },
-  textarea: {
-    width: "100%",
-    padding: "8px",
-    backgroundColor: "var(--bg)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "6px",
-    color: "var(--text)",
-    fontSize: "12px",
-    fontFamily: "inherit",
-    resize: "none",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  buttons: {
-    display: "flex",
-    gap: "8px",
-    marginTop: "8px",
-  },
-  button: {
-    flex: 1,
-    padding: "8px 12px",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "6px",
-    color: "var(--text)",
-    fontSize: "12px",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "background-color 0.1s",
-  },
-  pushButton: {
-    backgroundColor: "#f97316",
-    border: "none",
-    color: "#fff",
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-    cursor: "not-allowed",
-  },
-};

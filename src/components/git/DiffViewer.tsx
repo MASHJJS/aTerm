@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   diff: string;
@@ -16,25 +17,43 @@ export function DiffViewer({ diff, fileName }: Props) {
 
   if (!diff) {
     return (
-      <div style={styles.empty}>
-        <span style={styles.emptyText}>Select a file to view diff</span>
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        <span className="text-xs">Select a file to view diff</span>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      {fileName && <div style={styles.fileName}>{fileName}</div>}
-      <div style={styles.content}>
+    <div className="flex flex-col flex-1 overflow-hidden">
+      {fileName && (
+        <div className="px-3 py-2 text-[11px] font-medium text-foreground bg-secondary border-b border-border">
+          {fileName}
+        </div>
+      )}
+      <div className="flex-1 overflow-auto font-mono text-xs leading-relaxed">
         {lines.map((line, i) => (
-          <div key={i} style={{ ...styles.line, ...getLineStyle(line.type) }}>
+          <div
+            key={i}
+            className={cn(
+              "flex min-h-[18px] whitespace-pre",
+              line.type === "added" && "bg-green-500/15 text-green-400",
+              line.type === "removed" && "bg-red-500/15 text-red-400",
+              line.type === "hunk" && "bg-blue-500/10 text-blue-400",
+              line.type === "header" && "text-muted-foreground italic",
+              line.type === "info" && "text-blue-400"
+            )}
+          >
             {line.lineNumber && (
-              <span style={styles.lineNumbers}>
-                <span style={styles.lineNumber}>{line.lineNumber.old ?? ""}</span>
-                <span style={styles.lineNumber}>{line.lineNumber.new ?? ""}</span>
+              <span className="flex shrink-0 select-none border-r border-border">
+                <span className="w-10 px-2 text-right text-muted-foreground text-[11px]">
+                  {line.lineNumber.old ?? ""}
+                </span>
+                <span className="w-10 px-2 text-right text-muted-foreground text-[11px]">
+                  {line.lineNumber.new ?? ""}
+                </span>
               </span>
             )}
-            <span style={styles.lineContent}>{line.content}</span>
+            <span className="flex-1 px-3 overflow-hidden text-ellipsis">{line.content}</span>
           </div>
         ))}
       </div>
@@ -52,7 +71,6 @@ function parseDiff(diff: string): DiffLine[] {
         rawLine.startsWith("---") || rawLine.startsWith("+++")) {
       lines.push({ type: "header", content: rawLine });
     } else if (rawLine.startsWith("@@")) {
-      // Parse hunk header like "@@ -1,5 +1,8 @@"
       const match = rawLine.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
       if (match) {
         oldLine = parseInt(match[1], 10);
@@ -86,78 +104,3 @@ function parseDiff(diff: string): DiffLine[] {
 
   return lines;
 }
-
-function getLineStyle(type: DiffLine["type"]): React.CSSProperties {
-  switch (type) {
-    case "added":
-      return { backgroundColor: "rgba(152, 195, 121, 0.15)", color: "#98c379" };
-    case "removed":
-      return { backgroundColor: "rgba(224, 108, 117, 0.15)", color: "#e06c75" };
-    case "hunk":
-      return { backgroundColor: "rgba(97, 175, 239, 0.1)", color: "#61afef" };
-    case "header":
-      return { color: "var(--text-muted)", fontStyle: "italic" };
-    case "info":
-      return { color: "#61afef" };
-    default:
-      return {};
-  }
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    overflow: "hidden",
-  },
-  fileName: {
-    padding: "8px 12px",
-    fontSize: "11px",
-    fontWeight: 500,
-    color: "var(--text)",
-    backgroundColor: "var(--bg-secondary)",
-    borderBottom: "1px solid var(--border-subtle)",
-  },
-  content: {
-    flex: 1,
-    overflow: "auto",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    fontSize: "12px",
-    lineHeight: "1.5",
-  },
-  line: {
-    display: "flex",
-    minHeight: "18px",
-    whiteSpace: "pre",
-  },
-  lineNumbers: {
-    display: "flex",
-    flexShrink: 0,
-    userSelect: "none",
-    borderRight: "1px solid var(--border-subtle)",
-  },
-  lineNumber: {
-    width: "40px",
-    padding: "0 8px",
-    textAlign: "right",
-    color: "var(--text-subtle)",
-    fontSize: "11px",
-  },
-  lineContent: {
-    flex: 1,
-    padding: "0 12px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-  empty: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-muted)",
-  },
-  emptyText: {
-    fontSize: "12px",
-  },
-};

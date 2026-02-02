@@ -48,7 +48,6 @@ export function CommitHistory({ cwd }: Props) {
     setSelectedFile(null);
     setDiff("");
 
-    // Load files for this commit if not cached
     if (!commitFiles[hash]) {
       setLoadingFiles(hash);
       try {
@@ -84,7 +83,7 @@ export function CommitHistory({ cwd }: Props) {
 
   if (isLoading) {
     return (
-      <div style={styles.loading}>
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
         <span>Loading history...</span>
       </div>
     );
@@ -92,15 +91,15 @@ export function CommitHistory({ cwd }: Props) {
 
   if (commits.length === 0) {
     return (
-      <div style={styles.empty}>
-        <span style={styles.emptyText}>No commits yet</span>
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        <span className="text-xs">No commits yet</span>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.commitList}>
+    <div className="flex flex-1 overflow-hidden">
+      <div className="w-1/2 min-w-[300px] overflow-auto border-r border-border">
         {commits.map((commit) => (
           <CommitItem
             key={commit.hash}
@@ -114,46 +113,9 @@ export function CommitHistory({ cwd }: Props) {
           />
         ))}
       </div>
-      <div style={styles.diffPanel}>
+      <div className="flex-1 flex overflow-hidden">
         <DiffViewer diff={diff} fileName={selectedFile || undefined} />
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flex: 1,
-    overflow: "hidden",
-  },
-  commitList: {
-    width: "50%",
-    minWidth: "300px",
-    overflow: "auto",
-    borderRight: "1px solid var(--border-subtle)",
-  },
-  diffPanel: {
-    flex: 1,
-    display: "flex",
-    overflow: "hidden",
-  },
-  loading: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-  },
-  empty: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-muted)",
-  },
-  emptyText: {
-    fontSize: "12px",
-  },
-};

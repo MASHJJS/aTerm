@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 interface Props {
   filePath: string;
@@ -76,47 +79,70 @@ export function FileEditor({ filePath, onClose, onSave }: Props) {
   }
 
   return (
-    <div style={styles.overlay} onClick={handleClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <div style={styles.titleRow}>
-            <span style={styles.fileName}>{fileName}</span>
-            {hasChanges && <span style={styles.modified}>Modified</span>}
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-modal"
+      onClick={handleClose}
+    >
+      <div
+        className="w-[90%] max-w-[1000px] h-[85%] bg-background rounded-xl border border-border flex flex-col overflow-hidden shadow-2xl animate-popover-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-4 py-3 bg-secondary border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <span className="text-[13px] font-medium text-foreground font-mono">{fileName}</span>
+            {hasChanges && (
+              <span className="text-[11px] text-yellow-500 px-1.5 py-0.5 bg-yellow-500/15 rounded">
+                Modified
+              </span>
+            )}
           </div>
-          <div style={styles.actions}>
-            <button
-              style={{
-                ...styles.saveButton,
-                ...(hasChanges ? {} : styles.buttonDisabled),
-              }}
+          <div className="flex gap-2 items-center">
+            <Button
+              className={cn(
+                "bg-orange-500 hover:bg-orange-600 text-white",
+                !hasChanges && "opacity-50 cursor-not-allowed"
+              )}
+              size="sm"
               onClick={handleSave}
               disabled={!hasChanges || isSaving}
             >
               {isSaving ? "Saving..." : "Save (⌘S)"}
-            </button>
-            <button style={styles.closeButton} onClick={handleClose} title="Close (Esc)">
-              ×
-            </button>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleClose}
+              title="Close (Esc)"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        <div style={styles.content}>
+        <div className="flex-1 overflow-hidden flex">
           {isLoading ? (
-            <div style={styles.loading}>Loading...</div>
+            <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
+              Loading...
+            </div>
           ) : error ? (
-            <div style={styles.error}>{error}</div>
+            <div className="flex-1 flex items-center justify-center text-destructive text-xs">
+              {error}
+            </div>
           ) : (
-            <div style={styles.editorContainer}>
-              <div style={styles.lineNumbers}>
+            <div className="flex-1 flex overflow-hidden">
+              <div className="py-3 bg-secondary border-r border-border select-none overflow-hidden">
                 {content.split("\n").map((_, i) => (
-                  <div key={i} style={styles.lineNumber}>
+                  <div
+                    key={i}
+                    className="px-3 font-mono text-xs leading-relaxed text-muted-foreground text-right"
+                  >
                     {i + 1}
                   </div>
                 ))}
               </div>
               <textarea
                 ref={textareaRef}
-                style={styles.textarea}
+                className="flex-1 p-3 bg-background border-none outline-none text-foreground text-xs font-mono leading-relaxed resize-none overflow-auto"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 spellCheck={false}
@@ -128,142 +154,3 @@ export function FileEditor({ filePath, onClose, onSave }: Props) {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  modal: {
-    width: "90%",
-    maxWidth: "1000px",
-    height: "85%",
-    backgroundColor: "var(--bg)",
-    borderRadius: "12px",
-    border: "1px solid var(--border)",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-  },
-  header: {
-    padding: "12px 16px",
-    backgroundColor: "var(--bg-secondary)",
-    borderBottom: "1px solid var(--border-subtle)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  titleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  fileName: {
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "var(--text)",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-  },
-  modified: {
-    fontSize: "11px",
-    color: "#e2c08d",
-    padding: "2px 6px",
-    backgroundColor: "rgba(226, 192, 141, 0.15)",
-    borderRadius: "4px",
-  },
-  actions: {
-    display: "flex",
-    gap: "8px",
-    alignItems: "center",
-  },
-  saveButton: {
-    padding: "6px 12px",
-    backgroundColor: "#f97316",
-    border: "none",
-    borderRadius: "6px",
-    color: "#fff",
-    fontSize: "12px",
-    fontWeight: 500,
-    cursor: "pointer",
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-    cursor: "not-allowed",
-  },
-  closeButton: {
-    width: "28px",
-    height: "28px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "6px",
-    color: "var(--text-muted)",
-    fontSize: "20px",
-    cursor: "pointer",
-  },
-  content: {
-    flex: 1,
-    overflow: "hidden",
-    display: "flex",
-  },
-  loading: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-  },
-  error: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#e06c75",
-    fontSize: "12px",
-  },
-  editorContainer: {
-    flex: 1,
-    display: "flex",
-    overflow: "hidden",
-  },
-  lineNumbers: {
-    padding: "12px 0",
-    backgroundColor: "var(--bg-secondary)",
-    borderRight: "1px solid var(--border-subtle)",
-    userSelect: "none",
-    overflow: "hidden",
-  },
-  lineNumber: {
-    padding: "0 12px",
-    fontSize: "12px",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    lineHeight: "1.5",
-    color: "var(--text-subtle)",
-    textAlign: "right",
-  },
-  textarea: {
-    flex: 1,
-    padding: "12px",
-    backgroundColor: "var(--bg)",
-    border: "none",
-    outline: "none",
-    color: "var(--text)",
-    fontSize: "12px",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    lineHeight: "1.5",
-    resize: "none",
-    overflow: "auto",
-  },
-};

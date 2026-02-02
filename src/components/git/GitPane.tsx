@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import type { GitStatus, GitFile } from "../../lib/git";
 import { PaneHeader } from "../PaneHeader";
 import { GitPanelTabs, GitTab } from "./GitPanelTabs";
@@ -21,7 +23,7 @@ interface Props {
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
-const POLL_INTERVAL = 5000; // 5 seconds
+const POLL_INTERVAL = 5000;
 
 export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClose, dragHandleProps }: Props) {
   const [activeTab, setActiveTab] = useState<GitTab>("changes");
@@ -48,10 +50,7 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
 
   useEffect(() => {
     loadStatus();
-
-    // Poll for status updates
     pollRef.current = window.setInterval(loadStatus, POLL_INTERVAL);
-
     return () => {
       if (pollRef.current) {
         clearInterval(pollRef.current);
@@ -214,25 +213,33 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
   }
 
   const branchDisplay = status ? (
-    <>
-      <span style={styles.branch}>{status.branch || "HEAD"}</span>
+    <div className="flex items-center gap-1">
+      <span className="text-[11px] text-blue-400 font-mono px-1.5 py-0.5 bg-muted rounded">
+        {status.branch || "HEAD"}
+      </span>
       {(status.ahead > 0 || status.behind > 0) && (
-        <span style={styles.aheadBehind}>
-          {status.ahead > 0 && <span style={styles.ahead}>↑{status.ahead}</span>}
-          {status.behind > 0 && <span style={styles.behind}>↓{status.behind}</span>}
+        <span className="flex gap-1 text-[11px]">
+          {status.ahead > 0 && <span className="text-green-400">↑{status.ahead}</span>}
+          {status.behind > 0 && <span className="text-red-400">↓{status.behind}</span>}
         </span>
       )}
-    </>
+    </div>
   ) : null;
 
   const refreshButton = (
-    <button style={styles.refreshButton} onClick={() => loadStatus()} title="Refresh">
-      ↻
-    </button>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={() => loadStatus()}
+      title="Refresh"
+      className="opacity-60 hover:opacity-100"
+    >
+      <RefreshCw className="h-3.5 w-3.5" />
+    </Button>
   );
 
   return (
-    <div style={styles.container} onClick={onFocus}>
+    <div className="flex flex-col flex-1 min-h-0 bg-background rounded-lg border border-border overflow-hidden" onClick={onFocus}>
       <PaneHeader
         title="Git"
         accentColor={accentColor}
@@ -247,13 +254,13 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
       <GitPanelTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {error ? (
-        <div style={styles.error}>
+        <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
           <span>Not a git repository</span>
         </div>
       ) : activeTab === "changes" ? (
-        <div style={styles.changesContainer}>
-          <div style={styles.splitPane}>
-            <div style={styles.filePanel}>
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden">
+            <div className="w-2/5 min-w-[200px] max-w-[400px] flex flex-col border-r border-border overflow-hidden">
               {status && (
                 <FileChanges
                   staged={status.staged}
@@ -272,7 +279,7 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
                 />
               )}
             </div>
-            <div style={styles.diffPanel}>
+            <div className="flex-1 flex overflow-hidden">
               <DiffViewer diff={diff} fileName={selectedFile?.path} />
             </div>
           </div>
@@ -311,82 +318,3 @@ export function GitPane({ cwd, accentColor, onFocus, isFocused, onClose, canClos
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    minHeight: 0,
-    backgroundColor: "var(--bg)",
-    borderRadius: "8px",
-    border: "1px solid var(--border-subtle)",
-    overflow: "hidden",
-  },
-  branch: {
-    fontSize: "11px",
-    color: "#61afef",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    padding: "2px 6px",
-    backgroundColor: "var(--bg-tertiary)",
-    borderRadius: "4px",
-  },
-  aheadBehind: {
-    display: "flex",
-    gap: "4px",
-    fontSize: "11px",
-  },
-  ahead: {
-    color: "#98c379",
-  },
-  behind: {
-    color: "#e06c75",
-  },
-  refreshButton: {
-    width: "22px",
-    height: "22px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "14px",
-    cursor: "pointer",
-    opacity: 0.6,
-  },
-  changesContainer: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    overflow: "hidden",
-  },
-  splitPane: {
-    display: "flex",
-    flex: 1,
-    overflow: "hidden",
-  },
-  filePanel: {
-    width: "40%",
-    minWidth: "200px",
-    maxWidth: "400px",
-    display: "flex",
-    flexDirection: "column",
-    borderRight: "1px solid var(--border-subtle)",
-    overflow: "hidden",
-  },
-  diffPanel: {
-    flex: 1,
-    display: "flex",
-    overflow: "hidden",
-  },
-  error: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-  },
-};

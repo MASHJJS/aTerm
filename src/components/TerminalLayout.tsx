@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   DndContext,
   DragEndEvent,
@@ -283,7 +285,7 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={allPaneIds} strategy={rectSortingStrategy}>
-        <div style={styles.container}>
+        <div className="flex flex-col flex-1 gap-0 p-1.5 bg-background min-h-0">
           {layout.rows.map((row, rowIndex) => (
           <RowWithResizer
             key={row.id}
@@ -308,29 +310,39 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
 
         {contextMenu && (
           <>
-            <div style={styles.contextOverlay} onClick={closeContextMenu} />
+            <div className="fixed inset-0 z-popover" onClick={closeContextMenu} />
             <div
+              className="fixed bg-popover border border-border rounded-lg shadow-lg z-modal min-w-[160px] p-1 overflow-visible animate-popover-in"
               style={{
-                ...styles.contextMenu,
                 left: contextMenu.x,
                 top: contextMenu.y,
               }}
             >
               <div
-                style={styles.contextMenuItem}
+                className="flex justify-between items-center px-3 py-2 text-foreground text-xs cursor-pointer rounded relative hover:bg-accent"
                 onMouseEnter={() => setShowProfileSubmenu("vertical")}
               >
                 <span>Split Vertical</span>
-                <span style={styles.menuArrow}>▸</span>
+                <span className="text-[10px] text-muted-foreground">▸</span>
                 {showProfileSubmenu === "vertical" && (
-                  <div style={styles.submenu}>
-                    <button style={styles.submenuItem} onClick={() => splitVertical("shell")}>
+                  <div className="absolute left-full top-0 bg-popover border border-border rounded-lg shadow-lg min-w-[140px] p-1 ml-1">
+                    <button
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
+                      onClick={() => splitVertical("shell")}
+                    >
                       Shell (default)
                     </button>
-                    <div style={styles.submenuDivider} />
+                    <div className="h-px bg-border my-1" />
                     {profiles.map((p) => (
-                      <button key={p.id} style={styles.submenuItem} onClick={() => splitVertical(p.id)}>
-                        <span style={{ ...styles.profileDot, backgroundColor: p.color }} />
+                      <button
+                        key={p.id}
+                        className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
+                        onClick={() => splitVertical(p.id)}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: p.color }}
+                        />
                         {p.name}
                       </button>
                     ))}
@@ -339,20 +351,30 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
               </div>
 
               <div
-                style={styles.contextMenuItem}
+                className="flex justify-between items-center px-3 py-2 text-foreground text-xs cursor-pointer rounded relative hover:bg-accent"
                 onMouseEnter={() => setShowProfileSubmenu("horizontal")}
               >
                 <span>Split Horizontal</span>
-                <span style={styles.menuArrow}>▸</span>
+                <span className="text-[10px] text-muted-foreground">▸</span>
                 {showProfileSubmenu === "horizontal" && (
-                  <div style={styles.submenu}>
-                    <button style={styles.submenuItem} onClick={() => splitHorizontal("shell")}>
+                  <div className="absolute left-full top-0 bg-popover border border-border rounded-lg shadow-lg min-w-[140px] p-1 ml-1">
+                    <button
+                      className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
+                      onClick={() => splitHorizontal("shell")}
+                    >
                       Shell (default)
                     </button>
-                    <div style={styles.submenuDivider} />
+                    <div className="h-px bg-border my-1" />
                     {profiles.map((p) => (
-                      <button key={p.id} style={styles.submenuItem} onClick={() => splitHorizontal(p.id)}>
-                        <span style={{ ...styles.profileDot, backgroundColor: p.color }} />
+                      <button
+                        key={p.id}
+                        className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
+                        onClick={() => splitHorizontal(p.id)}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: p.color }}
+                        />
                         {p.name}
                       </button>
                     ))}
@@ -362,9 +384,9 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
 
               {totalPanes > 1 && (
                 <>
-                  <div style={styles.menuDivider} />
+                  <div className="h-px bg-border my-1" />
                   <button
-                    style={styles.contextMenuItemButton}
+                    className="w-full flex justify-between items-center px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
                     onClick={closePane}
                     onMouseEnter={() => setShowProfileSubmenu(null)}
                   >
@@ -380,8 +402,11 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
 
       <DragOverlay>
         {activeDragId && activeProfile && (
-          <div style={styles.dragOverlay}>
-            <span style={{ ...styles.profileDot, backgroundColor: activeProfile.color }} />
+          <div className="px-3 py-2 bg-muted border border-primary rounded-md flex items-center gap-2 text-xs text-foreground shadow-lg">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: activeProfile.color }}
+            />
             {activeProfile.name}
           </div>
         )}
@@ -471,7 +496,7 @@ function RowWithResizer({
 
   return (
     <>
-      <div ref={containerRef} style={{ ...styles.row, flex: row.flex }}>
+      <div ref={containerRef} className="flex min-h-0 gap-0" style={{ flex: row.flex }}>
         {row.panes.map((pane, paneIndex) => {
           const profile = profiles.find((p) => p.id === pane.profileId);
           const isLast = paneIndex === row.panes.length - 1;
@@ -502,10 +527,10 @@ function RowWithResizer({
       </div>
       {rowIndex < totalRows - 1 && !maximizedPaneId && (
         <div
-          style={{
-            ...styles.rowResizer,
-            ...(isDragging ? styles.resizerActive : {}),
-          }}
+          className={cn(
+            "h-1.5 cursor-row-resize bg-transparent transition-colors shrink-0",
+            isDragging && "bg-primary"
+          )}
           onMouseDown={handleRowResize}
         />
       )}
@@ -622,17 +647,13 @@ function SortablePane({
 
   if (!profile) {
     return (
-      <div style={{ ...styles.pane, flex }}>
-        <div style={styles.missingProfile}>Profile not found</div>
+      <div className="flex min-w-0 min-h-0 relative" style={{ flex }}>
+        <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs bg-secondary rounded-lg">
+          Profile not found
+        </div>
       </div>
     );
   }
-
-  const paneStyle = isMaximized
-    ? styles.paneMaximized
-    : isHidden
-    ? { ...styles.pane, flex, visibility: "hidden" as const }
-    : { ...styles.pane, flex };
 
   return (
     <>
@@ -641,8 +662,13 @@ function SortablePane({
           setNodeRef(node);
           (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
         }}
+        className={cn(
+          "flex min-w-0 min-h-0 relative",
+          isMaximized && "absolute inset-0 z-dropdown",
+          isHidden && "invisible"
+        )}
         style={{
-          ...paneStyle,
+          ...(!isMaximized ? { flex } : {}),
           ...sortableStyle,
           ...(isDragging ? { opacity: 0.5 } : {}),
         }}
@@ -676,205 +702,27 @@ function SortablePane({
           />
         )}
         {isMaximized && (
-          <button
-            style={styles.restoreButton}
+          <Button
+            variant="outline"
+            size="icon-sm"
+            className="absolute top-3 right-3 z-modal opacity-70 hover:opacity-100"
             onClick={onToggleMaximize}
             title="Restore (Shift+Cmd+Enter)"
           >
             ⤢
-          </button>
+          </Button>
         )}
       </div>
       {!isLast && !isMaximized && (
         <div
-          style={{
-            ...styles.paneResizer,
-            ...(isDraggingResize ? styles.resizerActive : {}),
-            ...(isHidden ? { visibility: "hidden" as const } : {}),
-          }}
+          className={cn(
+            "w-1.5 cursor-col-resize bg-transparent transition-colors shrink-0",
+            isDraggingResize && "bg-primary",
+            isHidden && "invisible"
+          )}
           onMouseDown={handlePaneResize}
         />
       )}
     </>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    gap: 0,
-    padding: "6px",
-    backgroundColor: "var(--bg)",
-    minHeight: 0,
-  },
-  row: {
-    display: "flex",
-    minHeight: 0,
-    gap: 0,
-  },
-  pane: {
-    display: "flex",
-    minWidth: 0,
-    minHeight: 0,
-    position: "relative",
-  },
-  paneMaximized: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 100,
-    display: "flex",
-  },
-  rowResizer: {
-    height: "6px",
-    cursor: "row-resize",
-    backgroundColor: "transparent",
-    transition: "background-color 0.15s ease",
-    flexShrink: 0,
-  },
-  paneResizer: {
-    width: "6px",
-    cursor: "col-resize",
-    backgroundColor: "transparent",
-    transition: "background-color 0.15s ease",
-    flexShrink: 0,
-  },
-  resizerActive: {
-    backgroundColor: "var(--accent)",
-  },
-  missingProfile: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-    backgroundColor: "var(--bg-secondary)",
-    borderRadius: "8px",
-  },
-  contextOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
-  },
-  contextMenu: {
-    position: "fixed",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border)",
-    borderRadius: "8px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
-    zIndex: 1000,
-    minWidth: "160px",
-    padding: "4px",
-    overflow: "visible",
-  },
-  contextMenuItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "8px 12px",
-    color: "var(--text)",
-    fontSize: "12px",
-    cursor: "pointer",
-    borderRadius: "4px",
-    position: "relative",
-  },
-  contextMenuItemButton: {
-    width: "100%",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "8px 12px",
-    backgroundColor: "transparent",
-    border: "none",
-    color: "var(--text)",
-    fontSize: "12px",
-    cursor: "pointer",
-    borderRadius: "4px",
-    textAlign: "left",
-  },
-  menuArrow: {
-    fontSize: "10px",
-    color: "var(--text-muted)",
-  },
-  menuDivider: {
-    height: "1px",
-    backgroundColor: "var(--border-subtle)",
-    margin: "4px 0",
-  },
-  submenu: {
-    position: "absolute",
-    left: "100%",
-    top: 0,
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border)",
-    borderRadius: "8px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
-    minWidth: "140px",
-    padding: "4px",
-    marginLeft: "4px",
-  },
-  submenuItem: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 12px",
-    backgroundColor: "transparent",
-    border: "none",
-    color: "var(--text)",
-    fontSize: "12px",
-    cursor: "pointer",
-    borderRadius: "4px",
-    textAlign: "left",
-  },
-  submenuDivider: {
-    height: "1px",
-    backgroundColor: "var(--border-subtle)",
-    margin: "4px 0",
-  },
-  profileDot: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    flexShrink: 0,
-  },
-  restoreButton: {
-    position: "absolute",
-    top: "12px",
-    right: "12px",
-    width: "28px",
-    height: "28px",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border)",
-    borderRadius: "6px",
-    color: "var(--text-muted)",
-    fontSize: "14px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 110,
-    opacity: 0.7,
-    transition: "opacity 0.15s ease",
-  },
-  dragOverlay: {
-    padding: "8px 12px",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--accent)",
-    borderRadius: "6px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "12px",
-    color: "var(--text)",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-  },
-};

@@ -1,4 +1,15 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Plus, X } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { getThemeList } from "../lib/themes";
 import type { AppConfig } from "../lib/config";
@@ -12,16 +23,11 @@ interface Props {
   onConfigChange: (config: AppConfig) => void;
 }
 
-type Tab = "appearance" | "profiles" | "layouts";
-
 export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props) {
   const { themeId, setThemeId } = useTheme();
   const themes = getThemeList();
-  const [activeTab, setActiveTab] = useState<Tab>("appearance");
   const [editingProfile, setEditingProfile] = useState<TerminalProfile | null>(null);
   const [editingLayout, setEditingLayout] = useState<Layout | null>(null);
-
-  if (!isOpen) return null;
 
   function handleProfileSave(profile: TerminalProfile) {
     const exists = config.profiles.some((p) => p.id === profile.id);
@@ -52,97 +58,73 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <h2 style={styles.title}>Settings</h2>
-          <button onClick={onClose} style={styles.closeButton}>
-            ×
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[560px] max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+        </DialogHeader>
 
-        <div style={styles.tabs}>
-          <button
-            style={{ ...styles.tab, ...(activeTab === "appearance" ? styles.tabActive : {}) }}
-            onClick={() => setActiveTab("appearance")}
-          >
-            Appearance
-          </button>
-          <button
-            style={{ ...styles.tab, ...(activeTab === "profiles" ? styles.tabActive : {}) }}
-            onClick={() => setActiveTab("profiles")}
-          >
-            Profiles
-          </button>
-          <button
-            style={{ ...styles.tab, ...(activeTab === "layouts" ? styles.tabActive : {}) }}
-            onClick={() => setActiveTab("layouts")}
-          >
-            Layouts
-          </button>
-        </div>
+        <Tabs defaultValue="appearance" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="profiles">Profiles</TabsTrigger>
+            <TabsTrigger value="layouts">Layouts</TabsTrigger>
+          </TabsList>
 
-        <div style={styles.content}>
-          {activeTab === "appearance" && (
-            <div style={styles.section}>
-              <h3 style={styles.sectionTitle}>Theme</h3>
-              <div style={styles.themeGrid}>
+          <TabsContent value="appearance" className="flex-1 overflow-auto mt-4">
+            <div className="mb-6">
+              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Theme
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
                 {themes.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setThemeId(t.id)}
-                    style={{
-                      ...styles.themeCard,
-                      ...(themeId === t.id ? styles.themeCardSelected : {}),
-                    }}
+                    className={cn(
+                      "p-2 bg-muted border-2 border-transparent rounded-lg cursor-pointer flex flex-col items-center gap-2 transition-all hover:border-muted-foreground/30",
+                      themeId === t.id && "border-primary"
+                    )}
                   >
                     <div
-                      style={{
-                        ...styles.themePreview,
-                        backgroundColor: t.colors.bg,
-                      }}
+                      className="w-full h-[50px] rounded flex overflow-hidden"
+                      style={{ backgroundColor: t.colors.bg }}
                     >
                       <div
-                        style={{
-                          ...styles.previewSidebar,
-                          backgroundColor: t.colors.bgSecondary,
-                        }}
+                        className="w-1/4 h-full"
+                        style={{ backgroundColor: t.colors.bgSecondary }}
                       />
-                      <div style={styles.previewMain}>
+                      <div className="flex-1 p-1.5 flex flex-col gap-1">
                         <div
-                          style={{
-                            ...styles.previewAccent,
-                            backgroundColor: t.colors.accent,
-                          }}
+                          className="w-2/5 h-1.5 rounded-sm"
+                          style={{ backgroundColor: t.colors.accent }}
                         />
                         <div
-                          style={{
-                            ...styles.previewText,
-                            backgroundColor: t.colors.textMuted,
-                          }}
+                          className="w-4/5 h-1 rounded-sm opacity-50"
+                          style={{ backgroundColor: t.colors.textMuted }}
                         />
                         <div
-                          style={{
-                            ...styles.previewText,
-                            backgroundColor: t.colors.textMuted,
-                            width: "60%",
-                          }}
+                          className="w-3/5 h-1 rounded-sm opacity-50"
+                          style={{ backgroundColor: t.colors.textMuted }}
                         />
                       </div>
                     </div>
-                    <span style={styles.themeName}>{t.name}</span>
+                    <span className="text-[11px] text-muted-foreground">{t.name}</span>
                   </button>
                 ))}
               </div>
             </div>
-          )}
+          </TabsContent>
 
-          {activeTab === "profiles" && (
-            <div style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <h3 style={styles.sectionTitle}>Terminal Profiles</h3>
-                <button
-                  style={styles.addButton}
+          <TabsContent value="profiles" className="flex-1 overflow-auto mt-4">
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Terminal Profiles
+                </h3>
+                <Button
+                  size="sm"
+                  className="h-6 text-[11px]"
                   onClick={() =>
                     setEditingProfile({
                       id: crypto.randomUUID(),
@@ -152,8 +134,9 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props
                     })
                   }
                 >
-                  + New
-                </button>
+                  <Plus className="h-3 w-3 mr-1" />
+                  New
+                </Button>
               </div>
 
               {editingProfile ? (
@@ -163,50 +146,60 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props
                   onCancel={() => setEditingProfile(null)}
                 />
               ) : (
-                <div style={styles.itemList}>
+                <div className="flex flex-col gap-2">
                   {config.profiles.map((profile) => (
-                    <div key={profile.id} style={styles.item}>
-                      <div style={styles.itemInfo}>
+                    <div
+                      key={profile.id}
+                      className="flex justify-between items-center px-3 py-2.5 bg-muted rounded-md border border-border"
+                    >
+                      <div className="flex items-center gap-2.5">
                         <span
-                          style={{
-                            ...styles.colorDot,
-                            backgroundColor: profile.color,
-                          }}
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: profile.color }}
                         />
                         <div>
-                          <div style={styles.itemName}>{profile.name}</div>
-                          <div style={styles.itemMeta}>
+                          <div className="text-xs font-medium text-foreground">
+                            {profile.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
                             {profile.command || "Default shell"}
                           </div>
                         </div>
                       </div>
-                      <div style={styles.itemActions}>
-                        <button
-                          style={styles.iconBtn}
+                      <div className="flex gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-2 text-[10px]"
                           onClick={() => setEditingProfile(profile)}
                         >
                           Edit
-                        </button>
-                        <button
-                          style={styles.iconBtn}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          className="h-6 w-6"
                           onClick={() => handleProfileDelete(profile.id)}
                         >
-                          ×
-                        </button>
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          )}
+          </TabsContent>
 
-          {activeTab === "layouts" && (
-            <div style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <h3 style={styles.sectionTitle}>Window Layouts</h3>
-                <button
-                  style={styles.addButton}
+          <TabsContent value="layouts" className="flex-1 overflow-auto mt-4">
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Window Layouts
+                </h3>
+                <Button
+                  size="sm"
+                  className="h-6 text-[11px]"
                   onClick={() =>
                     setEditingLayout({
                       id: crypto.randomUUID(),
@@ -223,8 +216,9 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props
                     })
                   }
                 >
-                  + New
-                </button>
+                  <Plus className="h-3 w-3 mr-1" />
+                  New
+                </Button>
               </div>
 
               {editingLayout ? (
@@ -235,45 +229,53 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Props
                   onCancel={() => setEditingLayout(null)}
                 />
               ) : (
-                <div style={styles.itemList}>
+                <div className="flex flex-col gap-2">
                   {config.layouts.map((layout) => (
-                    <div key={layout.id} style={styles.item}>
-                      <div style={styles.itemInfo}>
+                    <div
+                      key={layout.id}
+                      className="flex justify-between items-center px-3 py-2.5 bg-muted rounded-md border border-border"
+                    >
+                      <div className="flex items-center gap-2.5">
                         <LayoutPreview layout={layout} profiles={config.profiles} />
                         <div>
-                          <div style={styles.itemName}>{layout.name}</div>
-                          <div style={styles.itemMeta}>
+                          <div className="text-xs font-medium text-foreground">
+                            {layout.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
                             {layout.rows.reduce((acc, r) => acc + r.panes.length, 0)} panes
                           </div>
                         </div>
                       </div>
-                      <div style={styles.itemActions}>
-                        <button
-                          style={styles.iconBtn}
+                      <div className="flex gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-2 text-[10px]"
                           onClick={() => setEditingLayout(layout)}
                         >
                           Edit
-                        </button>
-                        <button
-                          style={styles.iconBtn}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          className="h-6 w-6"
                           onClick={() => handleLayoutDelete(layout.id)}
                         >
-                          ×
-                        </button>
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// Profile Editor Component
 function ProfileEditor({
   profile,
   onSave,
@@ -298,60 +300,63 @@ function ProfileEditor({
   }
 
   return (
-    <div style={styles.editor}>
-      <label style={styles.label}>
-        <span style={styles.labelText}>Name</span>
-        <input
+    <div className="flex flex-col gap-3.5 p-4 bg-muted rounded-lg border border-border">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          Name
+        </span>
+        <Input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          style={styles.input}
           placeholder="e.g., Dev Server"
         />
       </label>
 
-      <label style={styles.label}>
-        <span style={styles.labelText}>Command (optional)</span>
-        <input
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          Command (optional)
+        </span>
+        <Input
           type="text"
           value={command}
           onChange={(e) => setCommand(e.target.value)}
-          style={styles.input}
           placeholder="e.g., npm run dev"
         />
       </label>
 
-      <label style={styles.label}>
-        <span style={styles.labelText}>Color</span>
-        <div style={styles.colorRow}>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          Color
+        </span>
+        <div className="flex gap-2 items-center">
           <input
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            style={styles.colorInput}
+            className="w-8 h-8 p-0 border-none rounded cursor-pointer"
           />
-          <input
+          <Input
             type="text"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            style={{ ...styles.input, flex: 1 }}
+            className="flex-1"
           />
         </div>
       </label>
 
-      <div style={styles.editorActions}>
-        <button style={styles.cancelBtn} onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
-        </button>
-        <button style={styles.saveBtn} onClick={handleSave}>
+        </Button>
+        <Button size="sm" onClick={handleSave}>
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-// Layout Editor Component
 function LayoutEditor({
   layout,
   profiles,
@@ -426,43 +431,63 @@ function LayoutEditor({
   }
 
   return (
-    <div style={styles.editor}>
-      <label style={styles.label}>
-        <span style={styles.labelText}>Name</span>
-        <input
+    <div className="flex flex-col gap-3.5 p-4 bg-muted rounded-lg border border-border">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          Name
+        </span>
+        <Input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          style={styles.input}
           placeholder="e.g., AI + Dev + Shell"
         />
       </label>
 
-      <div style={styles.layoutBuilder}>
-        <div style={styles.layoutBuilderHeader}>
-          <span style={styles.labelText}>Pane Configuration</span>
-          <button style={styles.smallBtn} onClick={addRow}>
-            + Row
-          </button>
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            Pane Configuration
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 text-[10px]"
+            onClick={addRow}
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Row
+          </Button>
         </div>
 
         {rows.map((row, rowIndex) => (
-          <div key={row.id} style={styles.rowBuilder}>
-            <div style={styles.rowHeader}>
-              <span style={styles.rowLabel}>Row {rowIndex + 1}</span>
-              <button style={styles.smallBtn} onClick={() => addPane(row.id)}>
-                + Pane
-              </button>
+          <div
+            key={row.id}
+            className="p-2.5 bg-background rounded border border-border"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] text-muted-foreground font-medium">
+                Row {rowIndex + 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-5 text-[10px] px-2"
+                onClick={() => addPane(row.id)}
+              >
+                <Plus className="h-2.5 w-2.5 mr-0.5" />
+                Pane
+              </Button>
             </div>
-            <div style={styles.panesRow}>
+            <div className="flex gap-1.5">
               {row.panes.map((pane) => (
-                <div key={pane.id} style={styles.paneItem}>
+                <div key={pane.id} className="flex-1 flex gap-1">
                   <select
                     value={pane.profileId}
                     onChange={(e) =>
                       updatePaneProfile(row.id, pane.id, e.target.value)
                     }
-                    style={styles.paneSelect}
+                    className="flex-1 px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-[11px] outline-none focus:ring-2 focus:ring-ring"
                   >
                     {profiles.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -471,12 +496,14 @@ function LayoutEditor({
                     ))}
                   </select>
                   {row.panes.length > 1 && (
-                    <button
-                      style={styles.removeBtn}
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="h-7 w-6"
                       onClick={() => removePane(row.id, pane.id)}
                     >
-                      ×
-                    </button>
+                      <X className="h-3 w-3" />
+                    </Button>
                   )}
                 </div>
               ))}
@@ -485,19 +512,18 @@ function LayoutEditor({
         ))}
       </div>
 
-      <div style={styles.editorActions}>
-        <button style={styles.cancelBtn} onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
-        </button>
-        <button style={styles.saveBtn} onClick={handleSave}>
+        </Button>
+        <Button size="sm" onClick={handleSave}>
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-// Layout Preview Component
 function LayoutPreview({
   layout,
   profiles,
@@ -506,16 +532,16 @@ function LayoutPreview({
   profiles: TerminalProfile[];
 }) {
   return (
-    <div style={styles.layoutPreview}>
+    <div className="w-9 h-6 flex flex-col gap-px bg-background rounded-sm overflow-hidden shrink-0">
       {layout.rows.map((row) => (
-        <div key={row.id} style={{ ...styles.previewRow, flex: row.flex }}>
+        <div key={row.id} className="flex gap-px" style={{ flex: row.flex }}>
           {row.panes.map((pane) => {
             const profile = profiles.find((p) => p.id === pane.profileId);
             return (
               <div
                 key={pane.id}
+                className="min-h-1 opacity-80"
                 style={{
-                  ...styles.previewPane,
                   flex: pane.flex,
                   backgroundColor: profile?.color || "#888",
                 }}
@@ -527,362 +553,3 @@ function LayoutPreview({
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  modal: {
-    backgroundColor: "var(--bg-secondary)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    width: "560px",
-    maxHeight: "80vh",
-    display: "flex",
-    flexDirection: "column",
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "16px 20px",
-    borderBottom: "1px solid var(--border-subtle)",
-  },
-  title: {
-    margin: 0,
-    fontSize: "14px",
-    fontWeight: 600,
-    color: "var(--text)",
-  },
-  closeButton: {
-    background: "none",
-    border: "none",
-    color: "var(--text-muted)",
-    fontSize: "20px",
-    cursor: "pointer",
-    padding: 0,
-    lineHeight: 1,
-    width: "24px",
-    height: "24px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "4px",
-  },
-  tabs: {
-    display: "flex",
-    padding: "0 20px",
-    borderBottom: "1px solid var(--border-subtle)",
-    gap: "4px",
-  },
-  tab: {
-    padding: "12px 16px",
-    background: "none",
-    border: "none",
-    borderBottom: "2px solid transparent",
-    color: "var(--text-muted)",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontWeight: 500,
-    marginBottom: "-1px",
-    transition: "all 0.15s ease",
-  },
-  tabActive: {
-    color: "var(--text)",
-    borderBottomColor: "var(--accent)",
-  },
-  content: {
-    flex: 1,
-    overflow: "auto",
-    padding: "20px",
-  },
-  section: {
-    marginBottom: "24px",
-  },
-  sectionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "12px",
-  },
-  sectionTitle: {
-    fontSize: "11px",
-    fontWeight: 600,
-    color: "var(--text-muted)",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    margin: 0,
-  },
-  addButton: {
-    padding: "4px 10px",
-    backgroundColor: "var(--accent)",
-    border: "none",
-    borderRadius: "4px",
-    color: "#fff",
-    fontSize: "11px",
-    fontWeight: 500,
-    cursor: "pointer",
-  },
-  themeGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "12px",
-  },
-  themeCard: {
-    padding: "8px",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "2px solid transparent",
-    borderRadius: "8px",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "8px",
-    transition: "all 0.15s ease",
-  },
-  themeCardSelected: {
-    borderColor: "var(--accent)",
-  },
-  themePreview: {
-    width: "100%",
-    height: "50px",
-    borderRadius: "4px",
-    display: "flex",
-    overflow: "hidden",
-  },
-  previewSidebar: {
-    width: "25%",
-    height: "100%",
-  },
-  previewMain: {
-    flex: 1,
-    padding: "6px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  },
-  previewAccent: {
-    width: "40%",
-    height: "6px",
-    borderRadius: "2px",
-  },
-  previewText: {
-    width: "80%",
-    height: "4px",
-    borderRadius: "2px",
-    opacity: 0.5,
-  },
-  themeName: {
-    fontSize: "11px",
-    color: "var(--text-muted)",
-  },
-  itemList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-  item: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 12px",
-    backgroundColor: "var(--bg-tertiary)",
-    borderRadius: "6px",
-    border: "1px solid var(--border-subtle)",
-  },
-  itemInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  colorDot: {
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-    flexShrink: 0,
-  },
-  itemName: {
-    fontSize: "12px",
-    fontWeight: 500,
-    color: "var(--text)",
-  },
-  itemMeta: {
-    fontSize: "10px",
-    color: "var(--text-muted)",
-    marginTop: "2px",
-  },
-  itemActions: {
-    display: "flex",
-    gap: "6px",
-  },
-  iconBtn: {
-    padding: "4px 8px",
-    backgroundColor: "transparent",
-    border: "1px solid var(--border)",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "10px",
-    cursor: "pointer",
-  },
-  editor: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-    padding: "16px",
-    backgroundColor: "var(--bg-tertiary)",
-    borderRadius: "8px",
-    border: "1px solid var(--border-subtle)",
-  },
-  label: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  },
-  labelText: {
-    fontSize: "11px",
-    fontWeight: 500,
-    color: "var(--text-muted)",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  },
-  input: {
-    padding: "8px 10px",
-    backgroundColor: "var(--bg)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "4px",
-    color: "var(--text)",
-    fontSize: "12px",
-    outline: "none",
-  },
-  colorRow: {
-    display: "flex",
-    gap: "8px",
-    alignItems: "center",
-  },
-  colorInput: {
-    width: "32px",
-    height: "32px",
-    padding: 0,
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
-  editorActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "8px",
-    marginTop: "8px",
-  },
-  cancelBtn: {
-    padding: "6px 14px",
-    backgroundColor: "transparent",
-    border: "1px solid var(--border)",
-    borderRadius: "4px",
-    color: "var(--text)",
-    fontSize: "11px",
-    cursor: "pointer",
-  },
-  saveBtn: {
-    padding: "6px 14px",
-    backgroundColor: "var(--accent)",
-    border: "none",
-    borderRadius: "4px",
-    color: "#fff",
-    fontSize: "11px",
-    fontWeight: 500,
-    cursor: "pointer",
-  },
-  layoutBuilder: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-  layoutBuilderHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  smallBtn: {
-    padding: "3px 8px",
-    backgroundColor: "var(--bg)",
-    border: "1px solid var(--border)",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "10px",
-    cursor: "pointer",
-  },
-  rowBuilder: {
-    padding: "10px",
-    backgroundColor: "var(--bg)",
-    borderRadius: "4px",
-    border: "1px solid var(--border-subtle)",
-  },
-  rowHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "8px",
-  },
-  rowLabel: {
-    fontSize: "10px",
-    color: "var(--text-muted)",
-    fontWeight: 500,
-  },
-  panesRow: {
-    display: "flex",
-    gap: "6px",
-  },
-  paneItem: {
-    flex: 1,
-    display: "flex",
-    gap: "4px",
-  },
-  paneSelect: {
-    flex: 1,
-    padding: "6px 8px",
-    backgroundColor: "var(--bg-secondary)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "4px",
-    color: "var(--text)",
-    fontSize: "11px",
-    outline: "none",
-  },
-  removeBtn: {
-    padding: "0 6px",
-    backgroundColor: "transparent",
-    border: "1px solid var(--border)",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-    cursor: "pointer",
-  },
-  layoutPreview: {
-    width: "36px",
-    height: "24px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "1px",
-    backgroundColor: "var(--bg)",
-    borderRadius: "3px",
-    overflow: "hidden",
-    flexShrink: 0,
-  },
-  previewRow: {
-    display: "flex",
-    gap: "1px",
-  },
-  previewPane: {
-    minHeight: "4px",
-    opacity: 0.8,
-  },
-};

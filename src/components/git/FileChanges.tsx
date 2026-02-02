@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check } from "lucide-react";
 import type { GitFile } from "../../lib/git";
 import { FileItem } from "./FileItem";
 
@@ -36,15 +37,18 @@ function FileSection({
   if (files.length === 0) return null;
 
   return (
-    <div style={styles.section}>
-      <div style={styles.sectionHeader} onClick={() => setCollapsed(!collapsed)}>
-        <span style={styles.collapseIcon}>{collapsed ? "▸" : "▾"}</span>
-        <span style={styles.sectionTitle}>{title}</span>
-        <span style={styles.fileCount}>({files.length})</span>
-        <div style={styles.sectionActions}>
+    <div className="mb-1">
+      <div
+        className="flex items-center px-2 py-1.5 cursor-pointer select-none gap-1"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <span className="text-[10px] text-muted-foreground w-3">{collapsed ? "▸" : "▾"}</span>
+        <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">{title}</span>
+        <span className="text-[11px] text-muted-foreground">({files.length})</span>
+        <div className="ml-auto flex gap-1">
           {onStageAll && (
             <button
-              style={styles.sectionButton}
+              className="px-1.5 py-0.5 bg-transparent border border-border rounded text-muted-foreground text-[10px] cursor-pointer opacity-70 hover:opacity-100"
               onClick={(e) => { e.stopPropagation(); onStageAll(); }}
               title="Stage all"
             >
@@ -53,7 +57,7 @@ function FileSection({
           )}
           {onUnstageAll && (
             <button
-              style={styles.sectionButton}
+              className="px-1.5 py-0.5 bg-transparent border border-border rounded text-muted-foreground text-[10px] cursor-pointer opacity-70 hover:opacity-100"
               onClick={(e) => { e.stopPropagation(); onUnstageAll(); }}
               title="Unstage all"
             >
@@ -63,7 +67,7 @@ function FileSection({
         </div>
       </div>
       {!collapsed && (
-        <div style={styles.fileList}>
+        <div className="flex flex-col">
           {files.map((file) => (
             <FileItem
               key={file.path}
@@ -119,15 +123,15 @@ export function FileChanges({
 
   if (!hasChanges) {
     return (
-      <div style={styles.empty}>
-        <span style={styles.emptyIcon}>✓</span>
-        <span style={styles.emptyText}>No changes</span>
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+        <Check className="h-6 w-6 text-green-400" />
+        <span className="text-xs">No changes</span>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className="flex flex-col overflow-auto flex-1">
       <FileSection
         title="Staged"
         files={staged}
@@ -170,75 +174,3 @@ export function FileChanges({
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    overflow: "auto",
-    flex: 1,
-  },
-  section: {
-    marginBottom: "4px",
-  },
-  sectionHeader: {
-    display: "flex",
-    alignItems: "center",
-    padding: "6px 8px",
-    cursor: "pointer",
-    userSelect: "none",
-    gap: "4px",
-  },
-  collapseIcon: {
-    fontSize: "10px",
-    color: "var(--text-muted)",
-    width: "12px",
-  },
-  sectionTitle: {
-    fontSize: "11px",
-    fontWeight: 600,
-    color: "var(--text)",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  },
-  fileCount: {
-    fontSize: "11px",
-    color: "var(--text-muted)",
-  },
-  sectionActions: {
-    marginLeft: "auto",
-    display: "flex",
-    gap: "4px",
-  },
-  sectionButton: {
-    padding: "2px 6px",
-    backgroundColor: "transparent",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "4px",
-    color: "var(--text-muted)",
-    fontSize: "10px",
-    cursor: "pointer",
-    opacity: 0.7,
-    transition: "opacity 0.1s",
-  },
-  fileList: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  empty: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    color: "var(--text-muted)",
-  },
-  emptyIcon: {
-    fontSize: "24px",
-    color: "#98c379",
-  },
-  emptyText: {
-    fontSize: "12px",
-  },
-};

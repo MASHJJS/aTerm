@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { DiffViewer } from "./DiffViewer";
 
 interface Props {
@@ -27,118 +29,55 @@ export function DiffModal({ isOpen, onClose, diff, fileName, onEdit, onOpenInEdi
   if (!isOpen) return null;
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <span style={styles.fileName}>{fileName}</span>
-          <div style={styles.actions}>
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-modal"
+      onClick={onClose}
+    >
+      <div
+        className="w-[90%] max-w-[1200px] h-[85%] bg-background rounded-xl border border-border flex flex-col overflow-hidden shadow-2xl animate-popover-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-4 py-3 bg-secondary border-b border-border flex justify-between items-center">
+          <span className="text-[13px] font-medium text-foreground font-mono">{fileName}</span>
+          <div className="flex gap-2 items-center">
             {onEdit && (
-              <button style={styles.actionButton} onClick={onEdit} title="Edit file">
+              <Button variant="secondary" size="sm" onClick={onEdit}>
                 Edit
-              </button>
+              </Button>
             )}
             {onOpenInEditor && (
               <>
-                <button
-                  style={styles.actionButton}
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => onOpenInEditor("vscode")}
-                  title="Open in VSCode"
                 >
                   VSCode
-                </button>
-                <button
-                  style={styles.actionButton}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => onOpenInEditor("default")}
-                  title="Open in default editor"
                 >
                   Open
-                </button>
+                </Button>
               </>
             )}
-            <button style={styles.closeButton} onClick={onClose} title="Close (Esc)">
-              ×
-            </button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              title="Close (Esc)"
+              className="ml-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-        <div style={styles.content}>
+        <div className="flex-1 overflow-hidden flex">
           <DiffViewer diff={diff} />
         </div>
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  modal: {
-    width: "90%",
-    maxWidth: "1200px",
-    height: "85%",
-    backgroundColor: "var(--bg)",
-    borderRadius: "12px",
-    border: "1px solid var(--border)",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-  },
-  header: {
-    padding: "12px 16px",
-    backgroundColor: "var(--bg-secondary)",
-    borderBottom: "1px solid var(--border-subtle)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  fileName: {
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "var(--text)",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-  },
-  actions: {
-    display: "flex",
-    gap: "8px",
-    alignItems: "center",
-  },
-  actionButton: {
-    padding: "6px 12px",
-    backgroundColor: "var(--bg-tertiary)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "6px",
-    color: "var(--text)",
-    fontSize: "12px",
-    cursor: "pointer",
-    transition: "background-color 0.1s",
-  },
-  closeButton: {
-    width: "28px",
-    height: "28px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "6px",
-    color: "var(--text-muted)",
-    fontSize: "20px",
-    cursor: "pointer",
-    marginLeft: "8px",
-  },
-  content: {
-    flex: 1,
-    overflow: "hidden",
-    display: "flex",
-  },
-};

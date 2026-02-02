@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import type { CommitSummary, CommitFile } from "../../lib/git";
 
 interface Props {
@@ -23,64 +24,71 @@ export function CommitItem({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div style={styles.container}>
+    <div className="border-b border-border">
       <div
-        style={{
-          ...styles.header,
-          backgroundColor: isSelected ? "var(--bg-tertiary)" : hovered ? "var(--bg-secondary)" : "transparent",
-        }}
+        className={cn(
+          "flex items-center justify-between px-3 py-2 cursor-pointer gap-3",
+          isSelected ? "bg-muted" : hovered ? "bg-secondary" : "bg-transparent"
+        )}
         onClick={onSelect}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div style={styles.headerLeft}>
-          <span style={styles.hash}>{commit.shortHash}</span>
-          <span style={styles.subject}>{commit.subject}</span>
+        <div className="flex items-center gap-2 overflow-hidden flex-1">
+          <span className="font-mono text-[11px] text-blue-400 shrink-0">{commit.shortHash}</span>
+          <span className="text-xs text-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+            {commit.subject}
+          </span>
         </div>
-        <div style={styles.headerRight}>
-          <span style={styles.time}>{commit.relativeTime}</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-muted-foreground">{commit.relativeTime}</span>
           {commit.filesChanged > 0 && (
-            <span style={styles.stats}>
-              <span style={styles.additions}>+{commit.additions}</span>
-              <span style={styles.deletions}>-{commit.deletions}</span>
+            <span className="flex gap-1.5 font-mono text-[10px]">
+              <span className="text-green-400">+{commit.additions}</span>
+              <span className="text-red-400">-{commit.deletions}</span>
             </span>
           )}
         </div>
       </div>
 
       {isSelected && (
-        <div style={styles.details}>
-          <div style={styles.meta}>
-            <span style={styles.author}>{commit.author}</span>
-            <span style={styles.fullHash}>{commit.hash}</span>
+        <div className="px-3 pb-3">
+          <div className="flex items-center gap-3 py-2 border-b border-border mb-2">
+            <span className="text-[11px] text-muted-foreground">{commit.author}</span>
+            <span className="font-mono text-[10px] text-muted-foreground/60">{commit.hash}</span>
           </div>
 
           {isLoading ? (
-            <div style={styles.loading}>Loading files...</div>
+            <div className="py-2 text-[11px] text-muted-foreground">Loading files...</div>
           ) : files && files.length > 0 ? (
-            <div style={styles.fileList}>
+            <div className="flex flex-col gap-0.5">
               {files.map((file) => (
                 <div
                   key={file.path}
-                  style={{
-                    ...styles.file,
-                    backgroundColor: selectedFile === file.path ? "var(--bg)" : "transparent",
-                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1 rounded cursor-pointer",
+                    selectedFile === file.path ? "bg-background" : "bg-transparent hover:bg-secondary"
+                  )}
                   onClick={() => onSelectFile(file.path)}
                 >
-                  <span style={{ ...styles.fileStatus, color: getStatusColor(file.status) }}>
+                  <span
+                    className="font-mono text-[10px] font-semibold w-3"
+                    style={{ color: getStatusColor(file.status) }}
+                  >
                     {getStatusIcon(file.status)}
                   </span>
-                  <span style={styles.filePath}>{file.path}</span>
-                  <span style={styles.fileStats}>
-                    {file.additions > 0 && <span style={styles.additions}>+{file.additions}</span>}
-                    {file.deletions > 0 && <span style={styles.deletions}>-{file.deletions}</span>}
+                  <span className="text-[11px] text-foreground flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                    {file.path}
+                  </span>
+                  <span className="flex gap-1.5 font-mono text-[10px]">
+                    {file.additions > 0 && <span className="text-green-400">+{file.additions}</span>}
+                    {file.deletions > 0 && <span className="text-red-400">-{file.deletions}</span>}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={styles.noFiles}>No files changed</div>
+            <div className="py-2 text-[11px] text-muted-foreground">No files changed</div>
           )}
         </div>
       )}
@@ -107,122 +115,3 @@ function getStatusColor(status: string): string {
     default: return "var(--text-muted)";
   }
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    borderBottom: "1px solid var(--border-subtle)",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "8px 12px",
-    cursor: "pointer",
-    gap: "12px",
-  },
-  headerLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    overflow: "hidden",
-    flex: 1,
-  },
-  hash: {
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    fontSize: "11px",
-    color: "#61afef",
-    flexShrink: 0,
-  },
-  subject: {
-    fontSize: "12px",
-    color: "var(--text)",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-  headerRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    flexShrink: 0,
-  },
-  time: {
-    fontSize: "11px",
-    color: "var(--text-muted)",
-  },
-  stats: {
-    display: "flex",
-    gap: "6px",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    fontSize: "10px",
-  },
-  additions: {
-    color: "#98c379",
-  },
-  deletions: {
-    color: "#e06c75",
-  },
-  details: {
-    padding: "0 12px 12px 12px",
-  },
-  meta: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "8px 0",
-    borderBottom: "1px solid var(--border-subtle)",
-    marginBottom: "8px",
-  },
-  author: {
-    fontSize: "11px",
-    color: "var(--text-muted)",
-  },
-  fullHash: {
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    fontSize: "10px",
-    color: "var(--text-subtle)",
-  },
-  loading: {
-    padding: "8px 0",
-    fontSize: "11px",
-    color: "var(--text-muted)",
-  },
-  fileList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "2px",
-  },
-  file: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "4px 8px",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
-  fileStatus: {
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    fontSize: "10px",
-    fontWeight: 600,
-    width: "12px",
-  },
-  filePath: {
-    fontSize: "11px",
-    color: "var(--text)",
-    flex: 1,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-  fileStats: {
-    display: "flex",
-    gap: "6px",
-    fontFamily: "var(--font-mono, 'SF Mono', Menlo, monospace)",
-    fontSize: "10px",
-  },
-  noFiles: {
-    padding: "8px 0",
-    fontSize: "11px",
-    color: "var(--text-muted)",
-  },
-};

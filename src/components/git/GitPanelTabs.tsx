@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export type GitTab = "changes" | "history";
 
 interface Props {
@@ -7,21 +9,21 @@ interface Props {
 
 export function GitPanelTabs({ activeTab, onTabChange }: Props) {
   return (
-    <div style={styles.container}>
+    <div className="flex border-b border-border bg-secondary">
       <button
-        style={{
-          ...styles.tab,
-          ...(activeTab === "changes" ? styles.activeTab : {}),
-        }}
+        className={cn(
+          "flex-1 px-4 py-2 bg-transparent border-none border-b-2 border-transparent text-muted-foreground text-xs font-medium cursor-pointer transition-colors",
+          activeTab === "changes" && "text-foreground border-b-orange-500"
+        )}
         onClick={() => onTabChange("changes")}
       >
         Changes
       </button>
       <button
-        style={{
-          ...styles.tab,
-          ...(activeTab === "history" ? styles.activeTab : {}),
-        }}
+        className={cn(
+          "flex-1 px-4 py-2 bg-transparent border-none border-b-2 border-transparent text-muted-foreground text-xs font-medium cursor-pointer transition-colors",
+          activeTab === "history" && "text-foreground border-b-orange-500"
+        )}
         onClick={() => onTabChange("history")}
       >
         History
@@ -29,27 +31,3 @@ export function GitPanelTabs({ activeTab, onTabChange }: Props) {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    borderBottom: "1px solid var(--border-subtle)",
-    backgroundColor: "var(--bg-secondary)",
-  },
-  tab: {
-    flex: 1,
-    padding: "8px 16px",
-    backgroundColor: "transparent",
-    border: "none",
-    borderBottom: "2px solid transparent",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "color 0.1s, border-color 0.1s",
-  },
-  activeTab: {
-    color: "var(--text)",
-    borderBottomColor: "#f97316",
-  },
-};
