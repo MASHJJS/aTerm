@@ -63,16 +63,43 @@ fi
 
 echo -e "${GREEN}Built: ${DMG_PATH}${NC}"
 
+# Generate changelog from commits since last release
+echo -e "${YELLOW}Generating changelog...${NC}"
+LAST_VERSION_COMMIT=$(git log --oneline --grep="bump version to" | head -2 | tail -1 | cut -d' ' -f1)
+if [ -n "$LAST_VERSION_COMMIT" ]; then
+    CHANGELOG=$(git log ${LAST_VERSION_COMMIT}..HEAD --oneline --no-merges | grep -v "chore: bump version" | while read line; do
+        HASH=$(echo "$line" | cut -d' ' -f1)
+        MSG=$(echo "$line" | cut -d' ' -f2-)
+        # Categorize by conventional commit prefix
+        if [[ "$MSG" == feat:* ]]; then
+            echo "- ${MSG#feat: }"
+        elif [[ "$MSG" == fix:* ]]; then
+            echo "- ${MSG#fix: }"
+        elif [[ "$MSG" == docs:* ]] || [[ "$MSG" == chore:* ]]; then
+            : # skip docs and chore
+        else
+            echo "- $MSG"
+        fi
+    done)
+else
+    CHANGELOG="- Initial release"
+fi
+
 # Create release
 echo -e "${YELLOW}Creating GitHub release...${NC}"
 gh release create "v${VERSION}" \
     --title "aTerm v${VERSION}" \
-    --notes "## aTerm v${VERSION}
+    --notes "$(cat <<EOF
+## What's Changed
+
+$CHANGELOG
 
 ### Download
 - **macOS (Apple Silicon)**: \`$(basename "$DMG_PATH")\`
 
-Signed and notarized for macOS." \
+Signed and notarized for macOS.
+EOF
+)" \
     "$DMG_PATH"
 
 echo -e "${GREEN}Released: https://github.com/saadnvd1/aterm/releases/tag/v${VERSION}${NC}"
