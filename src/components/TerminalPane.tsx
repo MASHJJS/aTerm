@@ -123,7 +123,15 @@ export function TerminalPane({ id, title, cwd, command, accentColor, onFocus, is
       invoke("kill_pty", { id }).catch(console.error);
       terminal.dispose();
     };
-  }, [id, cwd, command, theme]);
+  }, [id, cwd, command]);
+
+  // Update terminal theme without recreating terminal
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.options.theme = theme.terminal.theme;
+      terminalRef.current.options.fontFamily = theme.terminal.fontFamily;
+    }
+  }, [theme]);
 
   // Refit terminal when maximized state changes
   useEffect(() => {
