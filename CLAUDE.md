@@ -122,4 +122,44 @@ Set `data-theme` attribute on `<html>`:
 - Use `cn()` for conditional classes: `cn("base", condition && "active")`
 - Prefer shadcn components over custom implementations
 - Use semantic color names (`bg-primary` not `bg-purple-500`)
-- Keep component files under 300 lines
+
+## File Size Rules
+
+**Target: Keep files under 300 lines.** Large files are harder to understand, test, and maintain.
+
+### How to Split Components
+
+1. **Extract sub-components** into sibling files:
+   ```
+   components/
+   ├── TerminalLayout.tsx        # Main orchestrator (~200 lines)
+   ├── terminal-layout/          # Sub-components
+   │   ├── SortablePane.tsx
+   │   ├── RowWithResizer.tsx
+   │   └── DropZones.tsx
+   ```
+
+2. **Extract hooks** for complex state/effects:
+   ```
+   hooks/
+   ├── useTerminalInstance.ts    # xterm.js lifecycle
+   ├── usePaneResize.ts          # Drag resize logic
+   ```
+
+3. **Extract types** into separate files when shared:
+   ```
+   lib/
+   ├── types/terminal.ts
+   ```
+
+### What Stays Together
+- Keep tightly coupled logic in one file (e.g., a component + its small helpers)
+- Don't split just to hit 300 lines if it hurts readability
+- Data files (themes.ts) can be longer - they're config, not logic
+
+### Current Violations (to fix)
+- `TerminalLayout.tsx` (1028 lines) → Split pane/row components
+- `SettingsModal.tsx` (935 lines) → Split tab contents
+- `TerminalPane.tsx` (690 lines) → Extract hooks
+- `AddProjectModal.tsx` (528 lines) → Split clone/browse sections
+- `App.tsx` (452 lines) → Extract handlers into hooks
