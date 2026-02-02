@@ -732,10 +732,13 @@ fn get_iterm_profiles() -> Result<Vec<ITermProfile>, String> {
                 .unwrap_or("")
                 .to_string();
 
-            // Get command if not empty
-            let command = bookmark_dict.get("Command")
+            // Get command - prefer "Initial Text" (Send Text at Start) over "Command"
+            let command = bookmark_dict.get("Initial Text")
                 .and_then(|v| v.as_string())
                 .filter(|s| !s.is_empty())
+                .or_else(|| bookmark_dict.get("Command")
+                    .and_then(|v| v.as_string())
+                    .filter(|s| !s.is_empty()))
                 .map(|s| s.to_string());
 
             let working_directory = bookmark_dict.get("Working Directory")
