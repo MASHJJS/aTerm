@@ -32,6 +32,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "Agent-focused terminal workspace",
+    "longDescription": "aTerm is an agentic terminal workspace for developers working with AI coding assistants like Claude Code, Cursor, and Codex.",
+    "copyright": "© 2025 Saad Naveed",
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": "Developer ID Application: Saad Naveed (4MC7NZ2XX3)",
+      "entitlements": null
+    }
   }
 }
