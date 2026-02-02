@@ -11,6 +11,7 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -145,6 +146,40 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
     }
 
     if (!sourceRowId || !sourcePane) return;
+
+    // Check if dropping on a row drop zone (to create new row)
+    if (overId.startsWith("row-drop-")) {
+      const insertIndex = parseInt(overId.replace("row-drop-", ""), 10);
+      const sourceRow = layout.rows.find((r) => r.id === sourceRowId);
+
+      // Create new row with the pane
+      const newRow: LayoutRow = {
+        id: crypto.randomUUID(),
+        flex: sourceRow?.flex || 1,
+        panes: [{ ...sourcePane, flex: 1 }],
+      };
+
+      // Remove pane from source row
+      let newRows = layout.rows.map((row) => {
+        if (row.id === sourceRowId) {
+          return { ...row, panes: row.panes.filter((p) => p.id !== activeId) };
+        }
+        return row;
+      });
+
+      // Remove empty rows
+      newRows = newRows.filter((row) => row.panes.length > 0);
+
+      // Adjust insert index if source row was removed and was before insert point
+      const sourceRowIndex = layout.rows.findIndex((r) => r.id === sourceRowId);
+      const sourceRowRemoved = layout.rows.find((r) => r.id === sourceRowId)?.panes.length === 1;
+      const adjustedIndex = sourceRowRemoved && sourceRowIndex < insertIndex ? insertIndex - 1 : insertIndex;
+
+      // Insert new row at position
+      newRows.splice(adjustedIndex, 0, newRow);
+      onLayoutChange({ ...layout, rows: newRows });
+      return;
+    }
 
     // Find which row contains the target pane
     let targetRowId: string | null = null;
@@ -286,27 +321,33 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange }: Pr
     >
       <SortableContext items={allPaneIds} strategy={rectSortingStrategy}>
         <div className="flex flex-col flex-1 gap-0 p-1.5 bg-background min-h-0">
+          {/* Drop zone at top */}
+          <RowDropZone id="row-drop-0" isActive={!!activeDragId} />
+
           {layout.rows.map((row, rowIndex) => (
-          <RowWithResizer
-            key={row.id}
-            row={row}
-            rowIndex={rowIndex}
-            totalRows={layout.rows.length}
-            totalPanes={totalPanes}
-            project={project}
-            profiles={profiles}
-            layout={layout}
-            onLayoutChange={onLayoutChange}
-            onContextMenu={handleContextMenu}
-            onPaneFocus={setFocusedPaneId}
-            focusedPaneId={focusedPaneId}
-            maximizedPaneId={maximizedPaneId}
-            onToggleMaximize={(paneId) => {
-              setMaximizedPaneId((current) => (current === paneId ? null : paneId));
-            }}
-            onClosePane={closePaneById}
-          />
-        ))}
+            <div key={row.id}>
+              <RowWithResizer
+                row={row}
+                rowIndex={rowIndex}
+                totalRows={layout.rows.length}
+                totalPanes={totalPanes}
+                project={project}
+                profiles={profiles}
+                layout={layout}
+                onLayoutChange={onLayoutChange}
+                onContextMenu={handleContextMenu}
+                onPaneFocus={setFocusedPaneId}
+                focusedPaneId={focusedPaneId}
+                maximizedPaneId={maximizedPaneId}
+                onToggleMaximize={(paneId) => {
+                  setMaximizedPaneId((current) => (current === paneId ? null : paneId));
+                }}
+                onClosePane={closePaneById}
+              />
+              {/* Drop zone after each row */}
+              <RowDropZone id={`row-drop-${rowIndex + 1}`} isActive={!!activeDragId} />
+            </div>
+          ))}
 
         {contextMenu && (
           <>
@@ -751,5 +792,35 @@ function SortablePane({
         />
       )}
     </>
+  );
+}
+
+interface RowDropZoneProps {
+  id: string;
+  isActive: boolean;
+}
+
+function RowDropZone({ id, isActive }: RowDropZoneProps) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
+  if (!isActive) return null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "h-8 mx-1 rounded border-2 border-dashed transition-all duration-150 flex items-center justify-center shrink-0",
+        isOver
+          ? "border-primary bg-primary/20"
+          : "border-muted-foreground/30 bg-muted/30"
+      )}
+    >
+      <span className={cn(
+        "text-xs transition-colors",
+        isOver ? "text-primary" : "text-muted-foreground"
+      )}>
+        Drop here for new row
+      </span>
+    </div>
   );
 }
