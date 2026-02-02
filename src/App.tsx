@@ -252,6 +252,9 @@ const styles: Record<string, React.CSSProperties> = {
     height: "80px",
     marginBottom: "16px",
     borderRadius: "16px",
+    display: "block",
+    marginLeft: "auto",
+    marginRight: "auto",
   },
   emptyTitle: {
     fontSize: "18px",
