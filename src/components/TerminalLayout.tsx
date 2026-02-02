@@ -3,6 +3,16 @@ import { listen } from "@tauri-apps/api/event";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   DndContext,
   DragEndEvent,
   DragOverlay,
@@ -54,16 +64,7 @@ interface Props {
   onPersistentLayoutChange?: (layout: Layout) => void;
 }
 
-interface ContextMenuState {
-  x: number;
-  y: number;
-  paneId: string;
-  rowId: string;
-}
-
 export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPersistentLayoutChange }: Props) {
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const [showProfileSubmenu, setShowProfileSubmenu] = useState<"vertical" | "horizontal" | null>(null);
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
   const [maximizedPaneId, setMaximizedPaneId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -252,20 +253,7 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
     }
   }
 
-  function handleContextMenu(e: React.MouseEvent, paneId: string, rowId: string) {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, paneId, rowId });
-    setShowProfileSubmenu(null);
-  }
-
-  function closeContextMenu() {
-    setContextMenu(null);
-    setShowProfileSubmenu(null);
-  }
-
-  function splitVertical(profileId: string) {
-    if (!contextMenu) return;
-
+  function splitVertical(paneId: string, rowId: string, profileId: string) {
     const newPane: LayoutPane = {
       id: crypto.randomUUID(),
       profileId,
@@ -273,21 +261,18 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
     };
 
     const newRows = layout.rows.map((row) => {
-      if (row.id !== contextMenu.rowId) return row;
-      const paneIndex = row.panes.findIndex((p) => p.id === contextMenu.paneId);
+      if (row.id !== rowId) return row;
+      const paneIndex = row.panes.findIndex((p) => p.id === paneId);
       const newPanes = [...row.panes];
       newPanes.splice(paneIndex + 1, 0, newPane);
       return { ...row, panes: newPanes };
     });
 
     onLayoutChange({ ...layout, rows: newRows });
-    closeContextMenu();
   }
 
-  function splitHorizontal(profileId: string) {
-    if (!contextMenu) return;
-
-    const rowIndex = layout.rows.findIndex((r) => r.id === contextMenu.rowId);
+  function splitHorizontal(rowId: string, profileId: string) {
+    const rowIndex = layout.rows.findIndex((r) => r.id === rowId);
     const currentRow = layout.rows[rowIndex];
 
     const newRow: LayoutRow = {
@@ -299,7 +284,6 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
     const newRows = [...layout.rows];
     newRows.splice(rowIndex + 1, 0, newRow);
     onLayoutChange({ ...layout, rows: newRows });
-    closeContextMenu();
   }
 
   function closePaneById(paneId: string, rowId: string) {
@@ -314,12 +298,6 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
       .filter((row) => row.panes.length > 0);
 
     onLayoutChange({ ...layout, rows: newRows });
-  }
-
-  function closePane() {
-    if (!contextMenu) return;
-    closePaneById(contextMenu.paneId, contextMenu.rowId);
-    closeContextMenu();
   }
 
   const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
@@ -359,7 +337,8 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
                 layout={layout}
                 onLayoutChange={onLayoutChange}
                 onPersistentLayoutChange={onPersistentLayoutChange}
-                onContextMenu={handleContextMenu}
+                onSplitVertical={(paneId, profileId) => splitVertical(paneId, row.id, profileId)}
+                onSplitHorizontal={(profileId) => splitHorizontal(row.id, profileId)}
                 onPaneFocus={setFocusedPaneId}
                 focusedPaneId={focusedPaneId}
                 maximizedPaneId={maximizedPaneId}
@@ -369,113 +348,13 @@ export function TerminalLayout({ project, layout, profiles, onLayoutChange, onPe
                 onClosePane={closePaneById}
                 renamingPaneId={renamingPaneId}
                 onRenamingComplete={() => setRenamingPaneId(null)}
+                onStartRename={(paneId) => setRenamingPaneId(paneId)}
               />
               {/* Drop zone after each row */}
               {activeDragId && <RowDropZone id={`row-drop-${rowIndex + 1}`} />}
             </React.Fragment>
           ))}
 
-        {contextMenu && (
-          <>
-            <div className="fixed inset-0 z-popover" onClick={closeContextMenu} />
-            <div
-              className="fixed bg-popover border border-border rounded-lg shadow-lg z-modal min-w-[160px] p-1 overflow-visible animate-popover-in"
-              style={{
-                left: contextMenu.x,
-                top: contextMenu.y,
-              }}
-            >
-              <div
-                className="flex justify-between items-center px-3 py-2 text-foreground text-xs cursor-pointer rounded relative hover:bg-accent"
-                onMouseEnter={() => setShowProfileSubmenu("vertical")}
-              >
-                <span>Split Vertical</span>
-                <span className="text-[10px] text-muted-foreground">▸</span>
-                {showProfileSubmenu === "vertical" && (
-                  <div className="absolute left-full top-0 bg-popover border border-border rounded-lg shadow-lg min-w-[140px] p-1 ml-1">
-                    <button
-                      className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
-                      onClick={() => splitVertical("shell")}
-                    >
-                      Shell (default)
-                    </button>
-                    <div className="h-px bg-border my-1" />
-                    {profiles.map((p) => (
-                      <button
-                        key={p.id}
-                        className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
-                        onClick={() => splitVertical(p.id)}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: p.color }}
-                        />
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div
-                className="flex justify-between items-center px-3 py-2 text-foreground text-xs cursor-pointer rounded relative hover:bg-accent"
-                onMouseEnter={() => setShowProfileSubmenu("horizontal")}
-              >
-                <span>Split Horizontal</span>
-                <span className="text-[10px] text-muted-foreground">▸</span>
-                {showProfileSubmenu === "horizontal" && (
-                  <div className="absolute left-full top-0 bg-popover border border-border rounded-lg shadow-lg min-w-[140px] p-1 ml-1">
-                    <button
-                      className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
-                      onClick={() => splitHorizontal("shell")}
-                    >
-                      Shell (default)
-                    </button>
-                    <div className="h-px bg-border my-1" />
-                    {profiles.map((p) => (
-                      <button
-                        key={p.id}
-                        className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
-                        onClick={() => splitHorizontal(p.id)}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: p.color }}
-                        />
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="h-px bg-border my-1" />
-              <button
-                className="w-full flex justify-between items-center px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
-                onClick={() => {
-                  setRenamingPaneId(contextMenu.paneId);
-                  closeContextMenu();
-                }}
-                onMouseEnter={() => setShowProfileSubmenu(null)}
-              >
-                Rename
-              </button>
-
-              {totalPanes > 1 && (
-                <>
-                  <div className="h-px bg-border my-1" />
-                  <button
-                    className="w-full flex justify-between items-center px-3 py-2 bg-transparent border-none text-foreground text-xs cursor-pointer rounded text-left hover:bg-accent"
-                    onClick={closePane}
-                    onMouseEnter={() => setShowProfileSubmenu(null)}
-                  >
-                    Close Pane
-                  </button>
-                </>
-              )}
-            </div>
-          </>
-        )}
         </div>
       </SortableContext>
 
@@ -504,7 +383,8 @@ interface RowProps {
   layout: Layout;
   onLayoutChange: (layout: Layout) => void;
   onPersistentLayoutChange?: (layout: Layout) => void;
-  onContextMenu: (e: React.MouseEvent, paneId: string, rowId: string) => void;
+  onSplitVertical: (paneId: string, profileId: string) => void;
+  onSplitHorizontal: (profileId: string) => void;
   onPaneFocus: (paneId: string) => void;
   focusedPaneId: string | null;
   maximizedPaneId: string | null;
@@ -512,6 +392,7 @@ interface RowProps {
   onClosePane: (paneId: string, rowId: string) => void;
   renamingPaneId: string | null;
   onRenamingComplete: () => void;
+  onStartRename: (paneId: string) => void;
 }
 
 function RowWithResizer({
@@ -524,7 +405,8 @@ function RowWithResizer({
   layout,
   onLayoutChange,
   onPersistentLayoutChange,
-  onContextMenu,
+  onSplitVertical,
+  onSplitHorizontal,
   onPaneFocus,
   focusedPaneId,
   maximizedPaneId,
@@ -532,6 +414,7 @@ function RowWithResizer({
   onClosePane,
   renamingPaneId,
   onRenamingComplete,
+  onStartRename,
 }: RowProps) {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -596,10 +479,12 @@ function RowWithResizer({
               isLast={isLast}
               project={project}
               profile={profile}
+              profiles={profiles}
               row={row}
               layout={layout}
               onLayoutChange={onLayoutChange}
-              onContextMenu={(e) => onContextMenu(e, pane.id, row.id)}
+              onSplitVertical={(profileId) => onSplitVertical(pane.id, profileId)}
+              onSplitHorizontal={onSplitHorizontal}
               onFocus={() => onPaneFocus(pane.id)}
               onRename={(name) => {
                 const newLayout = updatePaneName(layout, pane.id, name);
@@ -614,6 +499,7 @@ function RowWithResizer({
               canClose={totalPanes > 1}
               triggerRename={renamingPaneId === pane.id}
               onTriggerRenameComplete={onRenamingComplete}
+              onStartRename={() => onStartRename(pane.id)}
             />
           );
         })}
@@ -639,10 +525,12 @@ interface PaneProps {
   isLast: boolean;
   project: ProjectConfig;
   profile: TerminalProfile | undefined;
+  profiles: TerminalProfile[];
   row: LayoutRow;
   layout: Layout;
   onLayoutChange: (layout: Layout) => void;
-  onContextMenu: (e: React.MouseEvent) => void;
+  onSplitVertical: (profileId: string) => void;
+  onSplitHorizontal: (profileId: string) => void;
   onFocus: () => void;
   onRename: (name: string) => void;
   isFocused: boolean;
@@ -653,6 +541,7 @@ interface PaneProps {
   canClose: boolean;
   triggerRename: boolean;
   onTriggerRenameComplete: () => void;
+  onStartRename: () => void;
 }
 
 function SortablePane({
@@ -663,10 +552,12 @@ function SortablePane({
   isLast,
   project,
   profile,
+  profiles,
   row,
   layout,
   onLayoutChange,
-  onContextMenu,
+  onSplitVertical,
+  onSplitHorizontal,
   onFocus,
   onRename,
   isFocused,
@@ -677,6 +568,7 @@ function SortablePane({
   canClose,
   triggerRename,
   onTriggerRenameComplete,
+  onStartRename,
 }: PaneProps) {
   const [isDraggingResize, setIsDraggingResize] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -756,71 +648,126 @@ function SortablePane({
     );
   }
 
+  const paneContent = (
+    <>
+      {profile.type === "git" ? (
+        <GitPane
+          id={`${project.id}-${paneId}`}
+          title={paneName || profile.name}
+          cwd={project.path}
+          accentColor={profile.color}
+          onFocus={onFocus}
+          isFocused={isFocused}
+          onClose={onClosePane}
+          onRename={onRename}
+          triggerRename={triggerRename}
+          onTriggerRenameComplete={onTriggerRenameComplete}
+          canClose={canClose}
+          dragHandleProps={{ ...attributes, ...listeners }}
+        />
+      ) : (
+        <TerminalPane
+          id={`${project.id}-${paneId}`}
+          title={paneName || profile.name}
+          cwd={project.path}
+          command={buildCommand(profile.command, project.skipPermissions)}
+          accentColor={profile.color}
+          onFocus={onFocus}
+          isFocused={isFocused}
+          isMaximized={isMaximized}
+          onToggleMaximize={onToggleMaximize}
+          onClose={onClosePane}
+          onRename={onRename}
+          triggerRename={triggerRename}
+          onTriggerRenameComplete={onTriggerRenameComplete}
+          canClose={canClose}
+          dragHandleProps={{ ...attributes, ...listeners }}
+        />
+      )}
+      {isMaximized && (
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="absolute top-3 right-3 z-modal opacity-70 hover:opacity-100"
+          onClick={onToggleMaximize}
+          title="Restore (Shift+Cmd+Enter)"
+        >
+          ⤢
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <>
-      <div
-        ref={(node) => {
-          setNodeRef(node);
-          (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        }}
-        className={cn(
-          "flex min-w-0 min-h-0 relative",
-          isMaximized && "absolute inset-0 z-dropdown",
-          isHidden && "invisible"
-        )}
-        style={{
-          ...(!isMaximized ? { flex } : {}),
-          ...sortableStyle,
-          ...(isDragging ? { opacity: 0.5 } : {}),
-        }}
-        onContextMenu={onContextMenu}
-      >
-        {profile.type === "git" ? (
-          <GitPane
-            id={`${project.id}-${paneId}`}
-            title={paneName || profile.name}
-            cwd={project.path}
-            accentColor={profile.color}
-            onFocus={onFocus}
-            isFocused={isFocused}
-            onClose={onClosePane}
-            onRename={onRename}
-            triggerRename={triggerRename}
-            onTriggerRenameComplete={onTriggerRenameComplete}
-            canClose={canClose}
-            dragHandleProps={{ ...attributes, ...listeners }}
-          />
-        ) : (
-          <TerminalPane
-            id={`${project.id}-${paneId}`}
-            title={paneName || profile.name}
-            cwd={project.path}
-            command={buildCommand(profile.command, project.skipPermissions)}
-            accentColor={profile.color}
-            onFocus={onFocus}
-            isFocused={isFocused}
-            isMaximized={isMaximized}
-            onToggleMaximize={onToggleMaximize}
-            onClose={onClosePane}
-            onRename={onRename}
-            triggerRename={triggerRename}
-            onTriggerRenameComplete={onTriggerRenameComplete}
-            canClose={canClose}
-            dragHandleProps={{ ...attributes, ...listeners }}
-          />
-        )}
-        {isMaximized && (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="absolute top-3 right-3 z-modal opacity-70 hover:opacity-100"
-            onClick={onToggleMaximize}
-            title="Restore (Shift+Cmd+Enter)"
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            ref={(node) => {
+              setNodeRef(node);
+              (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }}
+            className={cn(
+              "flex min-w-0 min-h-0 relative",
+              isMaximized && "absolute inset-0 z-dropdown",
+              isHidden && "invisible"
+            )}
+            style={{
+              ...(!isMaximized ? { flex } : {}),
+              ...sortableStyle,
+              ...(isDragging ? { opacity: 0.5 } : {}),
+            }}
           >
-            ⤢
-          </Button>
-        )}
-      </div>
+            {paneContent}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-48">
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>Split Vertical</ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-44">
+              <ContextMenuItem onClick={() => onSplitVertical("shell")}>
+                Shell (default)
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              {profiles.map((p) => (
+                <ContextMenuItem key={p.id} onClick={() => onSplitVertical(p.id)}>
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0 mr-2"
+                    style={{ backgroundColor: p.color }}
+                  />
+                  {p.name}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>Split Horizontal</ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-44">
+              <ContextMenuItem onClick={() => onSplitHorizontal("shell")}>
+                Shell (default)
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              {profiles.map((p) => (
+                <ContextMenuItem key={p.id} onClick={() => onSplitHorizontal(p.id)}>
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0 mr-2"
+                    style={{ backgroundColor: p.color }}
+                  />
+                  {p.name}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={onStartRename}>Rename</ContextMenuItem>
+          {canClose && (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem onClick={onClosePane}>Close Pane</ContextMenuItem>
+            </>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
       {!isLast && !isMaximized && (
         <div
           className={cn(
