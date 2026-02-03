@@ -82,6 +82,7 @@ export function CreateTaskModal({ isOpen, project, onClose, onTaskCreated }: Pro
     setIsGitRepo(true);
 
     async function loadGitData() {
+      if (!project) return;
       try {
         const status = await invoke<GitStatus>("get_git_status", { path: project.path });
         const dirty =
