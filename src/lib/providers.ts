@@ -80,6 +80,21 @@ export function getProviderCommand(providerId: ProviderId): string | undefined {
   return provider.cli;
 }
 
+export function buildProviderCommand(
+  providerId: ProviderId,
+  skipPermissions?: boolean
+): string | undefined {
+  const provider = PROVIDERS[providerId];
+  if (!provider || providerId === "shell") return undefined;
+
+  const parts = [provider.cli, ...(provider.defaultArgs || [])].filter(Boolean);
+  if (skipPermissions && provider.autoApproveFlag) {
+    parts.push(provider.autoApproveFlag);
+  }
+
+  return parts.join(" ").trim() || undefined;
+}
+
 export function getProviderList(): ProviderDefinition[] {
   return Object.values(PROVIDERS);
 }

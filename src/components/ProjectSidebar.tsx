@@ -3,12 +3,13 @@ import Fuse from "fuse.js";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Plus, GitBranch } from "lucide-react";
+import { Settings, Plus, GitBranch, X } from "lucide-react";
 import type { ProjectConfig, AppConfig } from "../lib/config";
 import { PROVIDERS } from "../lib/providers";
 import { AddProjectModal } from "./AddProjectModal";
 import { SettingsModal } from "./SettingsModal";
 import { ProjectSettingsModal } from "./ProjectSettingsModal";
+import type { Task } from "../lib/tasks";
 
 // Calculate relative luminance to determine if text should be light or dark
 function getLuminance(hex: string): number {
@@ -31,21 +32,29 @@ function shouldUseLightText(bgColor: string): boolean {
 interface Props {
   config: AppConfig;
   selectedProject: ProjectConfig | null;
+  selectedTaskId?: string | null;
   onSelectProject: (project: ProjectConfig | null) => void;
+  onSelectTask: (projectId: string, taskId: string) => void;
   onConfigChange: (config: AppConfig) => void;
   onSaveWindowArrangement: (projectId: string) => void;
   onRestoreWindowArrangement: (projectId: string) => void;
   onAddGitPane: () => void;
+  onCreateTask: (project: ProjectConfig) => void;
+  onDeleteTask: (project: ProjectConfig, task: Task) => void;
 }
 
 export function ProjectSidebar({
   config,
   selectedProject,
+  selectedTaskId,
   onSelectProject,
+  onSelectTask,
   onConfigChange,
   onSaveWindowArrangement,
   onRestoreWindowArrangement,
   onAddGitPane,
+  onCreateTask,
+  onDeleteTask,
 }: Props) {
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -164,46 +173,81 @@ export function ProjectSidebar({
               const isSelected = selectedProject?.id === project.id;
               const useColorBg = isSelected && project.color;
               const useLightText = useColorBg ? shouldUseLightText(project.color!) : false;
+              const tasks = project.tasks || [];
               return (
-                <button
-                  key={project.id}
-                  onClick={() => onSelectProject(project)}
-                  onContextMenu={(e) => handleContextMenu(e, project)}
-                  className={cn(
-                    "w-full px-3 py-2.5 flex items-center gap-2.5 bg-transparent border-none rounded-md cursor-pointer text-left mb-0.5 transition-colors",
-                    !useColorBg && "text-foreground hover:bg-accent",
-                    isSelected && !useColorBg && "bg-accent"
+                <div key={project.id} className="mb-0.5">
+                  <button
+                    onClick={() => onSelectProject(project)}
+                    onContextMenu={(e) => handleContextMenu(e, project)}
+                    className={cn(
+                      "w-full px-3 py-2.5 flex items-center gap-2.5 bg-transparent border-none rounded-md cursor-pointer text-left transition-colors",
+                      !useColorBg && "text-foreground hover:bg-accent",
+                      isSelected && !useColorBg && "bg-accent"
+                    )}
+                    style={useColorBg ? { backgroundColor: project.color } : undefined}
+                  >
+                    {project.icon ? (
+                      <span className="text-base shrink-0">{project.icon}</span>
+                    ) : project.color && !isSelected ? (
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: project.color }}
+                      />
+                    ) : null}
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <span
+                        className={cn(
+                          "text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap",
+                          useLightText ? "text-white" : "text-foreground"
+                        )}
+                      >
+                        {project.name}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px]",
+                          useLightText ? "text-white/70" : "text-muted-foreground"
+                        )}
+                      >
+                        {PROVIDERS[project.provider]?.name || project.provider}
+                        {layout && ` · ${layout.name}`}
+                      </span>
+                    </div>
+                  </button>
+
+                  {tasks.length > 0 && (
+                    <div className="ml-6 mt-1 flex flex-col gap-1">
+                      {tasks.map((task) => {
+                        const isTaskSelected = selectedTaskId === task.id;
+                        return (
+                          <div
+                            key={task.id}
+                            className={cn(
+                              "flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors group",
+                              isTaskSelected ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
+                            )}
+                          >
+                            <button
+                              className="flex-1 text-left truncate"
+                              onClick={() => onSelectTask(project.id, task.id)}
+                            >
+                              {task.name}
+                            </button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                              title="Delete task"
+                              onClick={() => onDeleteTask(project, task)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                  style={useColorBg ? { backgroundColor: project.color } : undefined}
-                >
-                  {project.icon ? (
-                    <span className="text-base shrink-0">{project.icon}</span>
-                  ) : project.color && !isSelected ? (
-                    <span
-                      className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: project.color }}
-                    />
-                  ) : null}
-                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                    <span
-                      className={cn(
-                        "text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap",
-                        useLightText ? "text-white" : "text-foreground"
-                      )}
-                    >
-                      {project.name}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[10px]",
-                        useLightText ? "text-white/70" : "text-muted-foreground"
-                      )}
-                    >
-                      {PROVIDERS[project.provider]?.name || project.provider}
-                      {layout && ` · ${layout.name}`}
-                    </span>
-                  </div>
-                </button>
+                </div>
               );
             })
           )}
@@ -231,6 +275,15 @@ export function ProjectSidebar({
               }}
             >
               Project Settings...
+            </button>
+            <button
+              className="w-full px-3 py-2 bg-transparent border-none rounded text-foreground text-xs cursor-pointer text-left transition-colors hover:bg-accent"
+              onClick={() => {
+                onCreateTask(contextMenu.project);
+                setContextMenu(null);
+              }}
+            >
+              Create Task...
             </button>
             <div className="h-px bg-border my-1" />
             <button

@@ -63,6 +63,8 @@ export function SortablePane({
   onFontSizeChange,
   onLayoutChange,
   onPersistentLayoutChange,
+  initialInput,
+  onInitialInputSent,
   onSplitVertical,
   onSplitHorizontal,
   onFocus,
@@ -187,6 +189,8 @@ export function SortablePane({
           title={paneName || profile.name}
           cwd={project.path}
           command={buildCommand(profile.command, project.skipPermissions)}
+          initialInput={initialInput}
+          onInitialInputSent={onInitialInputSent}
           accentColor={profile.color}
           projectColor={project.color}
           defaultFontSize={defaultFontSize}

@@ -17,6 +17,8 @@ export function RowWithResizer({
   onPaneFontSizeChange,
   onLayoutChange,
   onPersistentLayoutChange,
+  initialInputByPaneId,
+  onInitialInputSentByPaneId,
   onSplitVertical,
   onSplitHorizontal,
   onPaneFocus,
@@ -102,6 +104,8 @@ export function RowWithResizer({
               onFontSizeChange={(size) => onPaneFontSizeChange(`${project.id}-${pane.id}`, size)}
               onLayoutChange={onLayoutChange}
               onPersistentLayoutChange={onPersistentLayoutChange}
+              initialInput={initialInputByPaneId?.[pane.id]}
+              onInitialInputSent={onInitialInputSentByPaneId?.[pane.id]}
               onSplitVertical={(profileId) => onSplitVertical(pane.id, profileId)}
               onSplitHorizontal={onSplitHorizontal}
               onFocus={() => onPaneFocus(pane.id)}

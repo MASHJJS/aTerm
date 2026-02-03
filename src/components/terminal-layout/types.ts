@@ -16,6 +16,8 @@ export interface RowProps {
   onPaneFontSizeChange: (paneInstanceId: string, fontSize: number) => void;
   onLayoutChange: (layout: Layout) => void;
   onPersistentLayoutChange?: (layout: Layout) => void;
+  initialInputByPaneId?: Record<string, string | undefined>;
+  onInitialInputSentByPaneId?: Record<string, (() => void) | undefined>;
   onSplitVertical: (paneId: string, profileId: string) => void;
   onSplitHorizontal: (profileId: string) => void;
   onPaneFocus: (paneId: string) => void;
@@ -46,6 +48,8 @@ export interface PaneProps {
   fontSize: number | undefined;
   onFontSizeChange: (size: number) => void;
   onLayoutChange: (layout: Layout) => void;
+  initialInput?: string;
+  onInitialInputSent?: () => void;
   onSplitVertical: (profileId: string) => void;
   onSplitHorizontal: (profileId: string) => void;
   onFocus: () => void;

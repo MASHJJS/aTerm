@@ -52,6 +52,8 @@ interface Props {
   title: string;
   cwd: string;
   command?: string;
+  initialInput?: string;
+  onInitialInputSent?: () => void;
   accentColor?: string;
   projectColor?: string;
   defaultFontSize?: number;
@@ -76,6 +78,8 @@ export function TerminalPane({
   title,
   cwd,
   command,
+  initialInput,
+  onInitialInputSent,
   accentColor,
   projectColor,
   defaultFontSize = 13,
@@ -101,6 +105,7 @@ export function TerminalPane({
   const searchAddonRef = useRef<SearchAddon | null>(null);
   const onToggleMaximizeRef = useRef(onToggleMaximize);
   const onFocusRef = useRef(onFocus);
+  const onInitialInputSentRef = useRef(onInitialInputSent);
 
   const [fontSize, setFontSize] = useState(savedFontSize ?? defaultFontSize);
   const [isDragging, setIsDragging] = useState(false);
@@ -109,6 +114,7 @@ export function TerminalPane({
   // Keep refs updated with latest callbacks
   onToggleMaximizeRef.current = onToggleMaximize;
   onFocusRef.current = onFocus;
+  onInitialInputSentRef.current = onInitialInputSent;
 
   // Main terminal setup effect
   useEffect(() => {
@@ -238,6 +244,30 @@ export function TerminalPane({
       invoke("spawn_pty", { id, cwd, cols: terminal.cols, rows: terminal.rows, command }).catch(console.error);
     }
 
+    let initialInputTimeout: number | null = null;
+    let initialFallbackTimeout: number | null = null;
+    let initialPromptSent = false;
+    let initialPromptScheduled = false;
+    const sendInitialPrompt = () => {
+      if (initialPromptSent || !initialInput) return;
+      initialPromptSent = true;
+      if (initialInputTimeout) clearTimeout(initialInputTimeout);
+      if (initialFallbackTimeout) clearTimeout(initialFallbackTimeout);
+      const payload = initialInput.endsWith("\n") ? initialInput : `${initialInput}\n`;
+      invoke("write_pty", { id, data: payload })
+        .catch(console.error)
+        .finally(() => {
+          onInitialInputSentRef.current?.();
+        });
+    };
+
+    if (initialInput) {
+      // Fallback in case we never see output
+      initialFallbackTimeout = window.setTimeout(() => {
+        sendInitialPrompt();
+      }, 2000);
+    }
+
     // Set up PTY output listener
     let unlistenFn: (() => void) | null = null;
 
@@ -265,6 +295,13 @@ export function TerminalPane({
         if (!frameRequested) {
           frameRequested = true;
           requestAnimationFrame(flushPendingData);
+        }
+
+        if (initialInput && !initialPromptSent && !initialPromptScheduled) {
+          initialPromptScheduled = true;
+          initialInputTimeout = window.setTimeout(() => {
+            sendInitialPrompt();
+          }, 250);
         }
       }).then((fn) => {
         unlistenFn = fn;
@@ -298,11 +335,17 @@ export function TerminalPane({
     });
 
     return () => {
+      if (initialInputTimeout) {
+        clearTimeout(initialInputTimeout);
+      }
+      if (initialFallbackTimeout) {
+        clearTimeout(initialFallbackTimeout);
+      }
       clearTimeout(resizeTimeout);
       terminal.element?.removeEventListener("click", handleTerminalClick);
       resizeObserver.disconnect();
     };
-  }, [id, cwd, command]);
+  }, [id, cwd, command, initialInput]);
 
   // Update theme
   useEffect(() => {

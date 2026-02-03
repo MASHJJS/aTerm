@@ -30,6 +30,8 @@ interface Props {
   onPaneFontSizeChange: (paneInstanceId: string, fontSize: number) => void;
   onLayoutChange: (layout: Layout) => void;
   onPersistentLayoutChange?: (layout: Layout) => void;
+  initialInputByPaneId?: Record<string, string | undefined>;
+  onInitialInputSentByPaneId?: Record<string, (() => void) | undefined>;
   isProjectActive?: boolean;
 }
 
@@ -43,6 +45,8 @@ export function TerminalLayout({
   onPaneFontSizeChange,
   onLayoutChange,
   onPersistentLayoutChange,
+  initialInputByPaneId,
+  onInitialInputSentByPaneId,
   isProjectActive = true,
 }: Props) {
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
@@ -425,6 +429,8 @@ export function TerminalLayout({
                 onPaneFontSizeChange={onPaneFontSizeChange}
                 onLayoutChange={onLayoutChange}
                 onPersistentLayoutChange={onPersistentLayoutChange}
+                initialInputByPaneId={initialInputByPaneId}
+                onInitialInputSentByPaneId={onInitialInputSentByPaneId}
                 onSplitVertical={(paneId, profileId) => splitVertical(paneId, row.id, profileId)}
                 onSplitHorizontal={(profileId) => splitHorizontal(row.id, profileId)}
                 onPaneFocus={setFocusedPaneId}
