@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AppConfig, DEFAULT_CONFIG, ProjectConfig } from "../lib/config";
+import { DEFAULT_PROFILES } from "../lib/profiles";
 
 interface WorktreeInfo {
   path: string;
@@ -69,10 +70,18 @@ export function useConfig() {
     try {
       const savedConfig = await invoke<AppConfig | null>("load_config");
       if (savedConfig) {
+        // Merge profiles: keep saved profiles but add any missing default profiles
+        const savedProfileIds = new Set((savedConfig.profiles || []).map((p) => p.id));
+        const missingDefaultProfiles = DEFAULT_PROFILES.filter((p) => !savedProfileIds.has(p.id));
+        const mergedProfiles = [
+          ...(savedConfig.profiles?.length ? savedConfig.profiles : DEFAULT_CONFIG.profiles),
+          ...missingDefaultProfiles,
+        ];
+
         const merged: AppConfig = {
           ...DEFAULT_CONFIG,
           ...savedConfig,
-          profiles: savedConfig.profiles?.length ? savedConfig.profiles : DEFAULT_CONFIG.profiles,
+          profiles: mergedProfiles,
           layouts: savedConfig.layouts?.length ? savedConfig.layouts : DEFAULT_CONFIG.layouts,
           paneFontSizes: savedConfig.paneFontSizes || {},
         };

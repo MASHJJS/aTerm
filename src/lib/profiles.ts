@@ -1,6 +1,6 @@
 // Terminal profiles - reusable terminal configurations (like iTerm2 profiles)
 
-export type ProfileType = "terminal" | "git";
+export type ProfileType = "terminal" | "git" | "editor";
 
 export interface TerminalProfile {
   id: string;
@@ -56,6 +56,12 @@ export const DEFAULT_PROFILES: TerminalProfile[] = [
     name: "Git",
     color: "#f97316",
     type: "git",
+  },
+  {
+    id: "editor",
+    name: "Editor",
+    color: "#0ea5e9",
+    type: "editor",
   },
 ];
 

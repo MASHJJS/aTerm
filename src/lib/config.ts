@@ -1,5 +1,6 @@
 import { ProviderId } from "./providers";
 import type { Task } from "./tasks";
+import type { ScratchNote } from "./notes";
 import { TerminalProfile, DEFAULT_PROFILES } from "./profiles";
 import { Layout, DEFAULT_LAYOUTS } from "./layouts";
 
@@ -15,6 +16,7 @@ export interface ProjectConfig {
   icon?: string; // Emoji or icon identifier
   color?: string; // Hex color for project branding (affects terminal headers)
   tasks?: Task[];
+  scratchNotes?: ScratchNote[];
 }
 
 export interface AppConfig {

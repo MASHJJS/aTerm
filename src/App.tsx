@@ -8,6 +8,7 @@ import { ExitConfirmDialog } from "./components/ExitConfirmDialog";
 import { StatusBar } from "./components/StatusBar";
 import { CreateTaskModal } from "./components/CreateTaskModal";
 import { TaskView } from "./components/TaskView";
+import { FileSearchModal } from "./components/editor/FileSearchModal";
 import { useConfig, useTasks, useLayouts, useKeyboardShortcuts } from "./hooks";
 import { useDetachedWindows } from "./hooks/useDetachedWindows";
 import type { ProjectConfig } from "./lib/config";
@@ -55,6 +56,8 @@ export default function App() {
     handleSaveWindowArrangement,
     handleRestoreWindowArrangement,
     handleAddGitPane,
+    handleAddEditorPane,
+    ensureEditorPane,
     cleanupRemovedProjects,
   } = useLayouts({ config, updateConfig, selectedProject });
 
@@ -63,6 +66,9 @@ export default function App() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [activePtyCount, setActivePtyCount] = useState(0);
   const [createTaskProject, setCreateTaskProject] = useState<ProjectConfig | null>(null);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showFileSearch, setShowFileSearch] = useState(false);
+  const [pendingFileToOpen, setPendingFileToOpen] = useState<string | null>(null);
 
   // Wrap handleSelectProject to also clear selectedTask
   const handleSelectProject = useCallback((project: ProjectConfig | null) => {
@@ -72,8 +78,12 @@ export default function App() {
 
   useKeyboardShortcuts({
     projects: config.projects,
+    selectedProject,
     onSelectProject: handleSelectProject,
     onToggleSidebar: () => setSidebarVisible((prev) => !prev),
+    onOpenScratchNotes: () => setShowNotesModal(true),
+    onAddEditorPane: handleAddEditorPane,
+    onOpenFileSearch: () => setShowFileSearch(true),
   });
 
   // Handler for detaching panes to separate windows
@@ -199,9 +209,12 @@ export default function App() {
             onSaveWindowArrangement={handleSaveWindowArrangement}
             onRestoreWindowArrangement={handleRestoreWindowArrangement}
             onAddGitPane={handleAddGitPane}
+            onAddEditorPane={handleAddEditorPane}
             onCreateTask={(project) => setCreateTaskProject(project)}
             onDeleteTask={handleDeleteTask}
             onDetachProject={handleDetachProject}
+            showNotesModal={showNotesModal}
+            onShowNotesModalChange={setShowNotesModal}
           />
         )}
         <div style={styles.main}>
@@ -240,6 +253,8 @@ export default function App() {
                     onPersistentLayoutChange={(newLayout) => handlePersistentLayoutChange(project.id, newLayout)}
                     onDetachPane={(paneId) => handleDetachPane(project, paneId, layout)}
                     isProjectActive={isActive}
+                    pendingFileToOpen={isActive ? pendingFileToOpen : null}
+                    onPendingFileOpened={() => setPendingFileToOpen(null)}
                   />
                 </div>
               );
@@ -266,6 +281,19 @@ export default function App() {
         selectedTask={selectedTask}
         onOpenGitPane={handleOpenGitFromStatusBar}
       />
+      {/* Global file search modal */}
+      {selectedProject && (
+        <FileSearchModal
+          isOpen={showFileSearch}
+          projectRoot={selectedProject.path}
+          onClose={() => setShowFileSearch(false)}
+          onSelectFile={(filePath) => {
+            ensureEditorPane();
+            setPendingFileToOpen(filePath);
+            setShowFileSearch(false);
+          }}
+        />
+      )}
     </div>
   );
 }

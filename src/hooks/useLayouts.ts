@@ -134,6 +134,89 @@ export function useLayouts({ config, updateConfig, selectedProject }: UseLayouts
     handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
   }
 
+  function handleAddEditorPane() {
+    if (!selectedProject) return;
+
+    const layout = runtimeLayouts[selectedProject.id];
+    if (!layout || layout.rows.length === 0) return;
+
+    // Check if an editor pane already exists
+    let editorPaneLocation: { rowIndex: number; paneIndex: number } | null = null;
+    for (let rowIndex = 0; rowIndex < layout.rows.length; rowIndex++) {
+      const row = layout.rows[rowIndex];
+      for (let paneIndex = 0; paneIndex < row.panes.length; paneIndex++) {
+        const pane = row.panes[paneIndex];
+        const profile = config.profiles.find((p) => p.id === pane.profileId);
+        if (profile?.type === "editor") {
+          editorPaneLocation = { rowIndex, paneIndex };
+          break;
+        }
+      }
+      if (editorPaneLocation) break;
+    }
+
+    if (editorPaneLocation) {
+      // Remove the editor pane (toggle off)
+      const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
+      if (totalPanes <= 1) return; // Don't remove the last pane
+
+      const newRows = layout.rows
+        .map((row, rowIndex) => {
+          if (rowIndex !== editorPaneLocation!.rowIndex) return row;
+          return {
+            ...row,
+            panes: row.panes.filter((_, i) => i !== editorPaneLocation!.paneIndex),
+          };
+        })
+        .filter((row) => row.panes.length > 0);
+
+      handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+    } else {
+      // Add a new editor pane (toggle on)
+      const newPane = { id: crypto.randomUUID(), profileId: "editor", flex: 1 };
+      const newRows = layout.rows.map((row, index) => {
+        if (index === 0) {
+          return { ...row, panes: [...row.panes, newPane] };
+        }
+        return row;
+      });
+
+      handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+    }
+  }
+
+  // Ensure an editor pane exists (doesn't toggle off if already exists)
+  function ensureEditorPane(): boolean {
+    if (!selectedProject) return false;
+
+    const layout = runtimeLayouts[selectedProject.id];
+    if (!layout || layout.rows.length === 0) return false;
+
+    // Check if an editor pane already exists
+    const hasEditorPane = layout.rows.some((row) =>
+      row.panes.some((pane) => {
+        const profile = config.profiles.find((p) => p.id === pane.profileId);
+        return profile?.type === "editor";
+      })
+    );
+
+    if (hasEditorPane) {
+      return true; // Already exists
+    }
+
+    // Add a new editor pane
+    const newPane = { id: crypto.randomUUID(), profileId: "editor", flex: 1 };
+    const newRows = layout.rows.map((row, index) => {
+      if (index === 0) {
+        return { ...row, panes: [...row.panes, newPane] };
+      }
+      return row;
+    });
+
+    handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+    return true;
+  }
+
   // Cleanup when projects are removed
   function cleanupRemovedProjects(projectIds: Set<string>) {
     const newOpened = new Set([...openedProjects].filter((id) => projectIds.has(id)));
@@ -158,6 +241,8 @@ export function useLayouts({ config, updateConfig, selectedProject }: UseLayouts
     handleSaveWindowArrangement,
     handleRestoreWindowArrangement,
     handleAddGitPane,
+    handleAddEditorPane,
+    ensureEditorPane,
     cleanupRemovedProjects,
   };
 }

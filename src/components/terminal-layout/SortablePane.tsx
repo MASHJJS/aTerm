@@ -17,6 +17,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { TerminalPane, serializeRefs } from "../TerminalPane";
 import { GitPane } from "../git/GitPane";
+import { EditorPane } from "../editor/EditorPane";
 import { updatePaneName } from "../../lib/layouts";
 import { PROVIDERS } from "../../lib/providers";
 import { PaneEdgeDropZone } from "./DropZones";
@@ -83,6 +84,8 @@ export function SortablePane({
   onDetachPane,
   activeDragId,
   isProjectActive,
+  pendingFileToOpen,
+  onPendingFileOpened,
 }: SortablePaneProps) {
   const [isDraggingResize, setIsDraggingResize] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -185,6 +188,24 @@ export function SortablePane({
           onTriggerRenameComplete={onTriggerRenameComplete}
           canClose={canClose}
           dragHandleProps={{ ...attributes, ...listeners }}
+        />
+      ) : profile.type === "editor" ? (
+        <EditorPane
+          id={`${project.id}-${paneId}`}
+          title={paneName || profile.name}
+          cwd={project.path}
+          accentColor={profile.color}
+          projectColor={project.color}
+          onFocus={onFocus}
+          isFocused={isFocused}
+          onClose={onClosePane}
+          onRename={handleRename}
+          triggerRename={triggerRename}
+          onTriggerRenameComplete={onTriggerRenameComplete}
+          canClose={canClose}
+          dragHandleProps={{ ...attributes, ...listeners }}
+          pendingFileToOpen={pendingFileToOpen}
+          onPendingFileOpened={onPendingFileOpened}
         />
       ) : (
         <TerminalPane
@@ -297,7 +318,7 @@ export function SortablePane({
           </ContextMenuSub>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={onStartRename}>Rename</ContextMenuItem>
-          {profile?.type !== "git" && (
+          {profile?.type !== "git" && profile?.type !== "editor" && (
             <ContextMenuItem onClick={async () => {
               const serializeFn = serializeRefs.get(`${project.id}-${paneId}`);
               if (!serializeFn) return;

@@ -34,6 +34,8 @@ export function RowWithResizer({
   minimizedPaneIds,
   activeDragId,
   isProjectActive,
+  pendingFileToOpen,
+  onPendingFileOpened,
 }: RowProps) {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,6 +129,8 @@ export function RowWithResizer({
               isMinimized={minimizedPaneIds.has(pane.id)}
               activeDragId={activeDragId}
               isProjectActive={isProjectActive}
+              pendingFileToOpen={pendingFileToOpen}
+              onPendingFileOpened={onPendingFileOpened}
             />
           );
         })}

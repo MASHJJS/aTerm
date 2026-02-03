@@ -35,6 +35,8 @@ interface Props {
   onInitialInputSentByPaneId?: Record<string, (() => void) | undefined>;
   onDetachPane?: (paneId: string) => void;
   isProjectActive?: boolean;
+  pendingFileToOpen?: string | null;
+  onPendingFileOpened?: () => void;
 }
 
 export function TerminalLayout({
@@ -51,6 +53,8 @@ export function TerminalLayout({
   onInitialInputSentByPaneId,
   onDetachPane,
   isProjectActive = true,
+  pendingFileToOpen,
+  onPendingFileOpened,
 }: Props) {
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
   const [maximizedPaneId, setMaximizedPaneId] = useState<string | null>(null);
@@ -563,6 +567,8 @@ export function TerminalLayout({
                 minimizedPaneIds={minimizedPaneIds}
                 activeDragId={activeDragId}
                 isProjectActive={isProjectActive}
+                pendingFileToOpen={pendingFileToOpen}
+                onPendingFileOpened={onPendingFileOpened}
               />
               {/* Drop zone after each row */}
               {activeDragId && <RowDropZone id={`row-drop-${rowIndex + 1}`} />}

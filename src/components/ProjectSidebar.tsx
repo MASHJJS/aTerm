@@ -3,12 +3,14 @@ import Fuse from "fuse.js";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Plus, GitBranch, X, Zap } from "lucide-react";
+import { Settings, Plus, GitBranch, X, Zap, StickyNote, FileCode } from "lucide-react";
+import { SimpleTooltip } from "@/components/ui/simple-tooltip";
 import type { ProjectConfig, AppConfig } from "../lib/config";
 import { PROVIDERS } from "../lib/providers";
 import { AddProjectModal } from "./AddProjectModal";
 import { SettingsModal } from "./SettingsModal";
 import { ProjectSettingsModal } from "./ProjectSettingsModal";
+import { ScratchNotesModal } from "./ScratchNotesModal";
 import type { Task } from "../lib/tasks";
 
 // Calculate relative luminance to determine if text should be light or dark
@@ -39,9 +41,12 @@ interface Props {
   onSaveWindowArrangement: (projectId: string) => void;
   onRestoreWindowArrangement: (projectId: string) => void;
   onAddGitPane: () => void;
+  onAddEditorPane: () => void;
   onCreateTask: (project: ProjectConfig) => void;
   onDeleteTask: (project: ProjectConfig, task: Task) => void;
   onDetachProject?: (project: ProjectConfig) => void;
+  showNotesModal?: boolean;
+  onShowNotesModalChange?: (show: boolean) => void;
 }
 
 export function ProjectSidebar({
@@ -54,19 +59,27 @@ export function ProjectSidebar({
   onSaveWindowArrangement,
   onRestoreWindowArrangement,
   onAddGitPane,
+  onAddEditorPane,
   onCreateTask,
   onDeleteTask,
   onDetachProject,
+  showNotesModal = false,
+  onShowNotesModalChange,
 }: Props) {
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [localShowNotesModal, setLocalShowNotesModal] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     project: ProjectConfig;
     x: number;
     y: number;
   } | null>(null);
   const [editingProject, setEditingProject] = useState<ProjectConfig | null>(null);
+
+  // Use external state if provided, otherwise use local state
+  const notesModalOpen = onShowNotesModalChange ? showNotesModal : localShowNotesModal;
+  const setNotesModalOpen = onShowNotesModalChange || setLocalShowNotesModal;
 
   const fuse = useMemo(
     () =>
@@ -124,31 +137,54 @@ export function ProjectSidebar({
             <span />
           )}
           <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onAddGitPane}
-              title="Open Git Panel"
-              disabled={!selectedProject}
-            >
-              <GitBranch className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setShowSettings(true)}
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setShowAddModal(true)}
-              title="Add Project"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <SimpleTooltip content="Git Panel" disabled={!selectedProject}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onAddGitPane}
+                disabled={!selectedProject}
+              >
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            </SimpleTooltip>
+            <SimpleTooltip content="Editor" shortcut="⇧⌘E" disabled={!selectedProject}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onAddEditorPane}
+                disabled={!selectedProject}
+              >
+                <FileCode className="h-4 w-4" />
+              </Button>
+            </SimpleTooltip>
+            <SimpleTooltip content="Scratch Notes" shortcut="⇧⌘N" disabled={!selectedProject}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setNotesModalOpen(true)}
+                disabled={!selectedProject}
+              >
+                <StickyNote className="h-4 w-4" />
+              </Button>
+            </SimpleTooltip>
+            <SimpleTooltip content="Settings">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowSettings(true)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </SimpleTooltip>
+            <SimpleTooltip content="Add Project">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowAddModal(true)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </SimpleTooltip>
           </div>
         </div>
 
@@ -353,6 +389,14 @@ export function ProjectSidebar({
           onSave={handleProjectSave}
         />
       )}
+
+      <ScratchNotesModal
+        isOpen={notesModalOpen}
+        project={selectedProject}
+        onClose={() => setNotesModalOpen(false)}
+        config={config}
+        onConfigChange={onConfigChange}
+      />
     </>
   );
 }

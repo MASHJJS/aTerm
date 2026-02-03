@@ -3,14 +3,22 @@ import type { ProjectConfig } from "../lib/config";
 
 interface UseKeyboardShortcutsProps {
   projects: ProjectConfig[];
+  selectedProject: ProjectConfig | null;
   onSelectProject: (project: ProjectConfig) => void;
   onToggleSidebar: () => void;
+  onOpenScratchNotes: () => void;
+  onAddEditorPane?: () => void;
+  onOpenFileSearch?: () => void;
 }
 
 export function useKeyboardShortcuts({
   projects,
+  selectedProject,
   onSelectProject,
   onToggleSidebar,
+  onOpenScratchNotes,
+  onAddEditorPane,
+  onOpenFileSearch,
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -27,9 +35,30 @@ export function useKeyboardShortcuts({
         e.preventDefault();
         onToggleSidebar();
       }
+      // Cmd+Shift+N: Open scratch notes
+      if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "n") {
+        if (selectedProject) {
+          e.preventDefault();
+          onOpenScratchNotes();
+        }
+      }
+      // Cmd+Shift+E: Add editor pane
+      if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "e") {
+        if (selectedProject && onAddEditorPane) {
+          e.preventDefault();
+          onAddEditorPane();
+        }
+      }
+      // Cmd+P: Open file search
+      if (e.metaKey && !e.shiftKey && e.key.toLowerCase() === "p") {
+        if (selectedProject && onOpenFileSearch) {
+          e.preventDefault();
+          onOpenFileSearch();
+        }
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [projects, onSelectProject, onToggleSidebar]);
+  }, [projects, selectedProject, onSelectProject, onToggleSidebar, onOpenScratchNotes, onAddEditorPane, onOpenFileSearch]);
 }

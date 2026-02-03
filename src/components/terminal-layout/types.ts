@@ -33,6 +33,8 @@ export interface RowProps {
   minimizedPaneIds: Set<string>;
   activeDragId: string | null;
   isProjectActive: boolean;
+  pendingFileToOpen?: string | null;
+  onPendingFileOpened?: () => void;
 }
 
 export interface PaneProps {
@@ -71,6 +73,8 @@ export interface PaneProps {
   onDetachPane?: () => void;
   activeDragId: string | null;
   isProjectActive: boolean;
+  pendingFileToOpen?: string | null;
+  onPendingFileOpened?: () => void;
 }
 
 export type EdgePosition = "left" | "right" | "top" | "bottom";
