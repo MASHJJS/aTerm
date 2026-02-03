@@ -15,6 +15,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { killPty } from "./TerminalPane";
+import { terminalInstances } from "./terminal-pane";
 import { RowWithResizer, RowDropZone } from "./terminal-layout";
 import type { ProjectConfig } from "../lib/config";
 import type { Layout, LayoutRow, LayoutPane } from "../lib/layouts";
@@ -63,6 +64,41 @@ export function TerminalLayout({
     })
   );
 
+  // Get all pane IDs in order for cycling
+  const allPaneIds = layout.rows.flatMap((row) => row.panes.map((p) => p.id));
+
+  // Cycle to next/previous pane
+  function cyclePanes(direction: "next" | "prev") {
+    if (allPaneIds.length === 0) return;
+
+    const currentIndex = focusedPaneId ? allPaneIds.indexOf(focusedPaneId) : -1;
+    let newIndex: number;
+
+    if (direction === "next") {
+      newIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % allPaneIds.length;
+    } else {
+      newIndex = currentIndex === -1 ? allPaneIds.length - 1 : (currentIndex - 1 + allPaneIds.length) % allPaneIds.length;
+    }
+
+    const newPaneId = allPaneIds[newIndex];
+    setFocusedPaneId(newPaneId);
+
+    // If maximized, switch which pane is maximized
+    if (maximizedPaneId) {
+      setMaximizedPaneId(newPaneId);
+    }
+
+    // Focus the terminal
+    const terminalId = `${project.id}-${newPaneId}`;
+    const instance = terminalInstances.get(terminalId);
+    if (instance) {
+      // Small delay to ensure DOM is ready after potential maximize switch
+      requestAnimationFrame(() => {
+        instance.terminal.focus();
+      });
+    }
+  }
+
   // Listen for keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -73,6 +109,20 @@ export function TerminalLayout({
         } else if (focusedPaneId) {
           setMaximizedPaneId(focusedPaneId);
         }
+        return;
+      }
+
+      // Cmd+Shift+[ - previous pane
+      if (e.shiftKey && e.metaKey && e.key === "[") {
+        e.preventDefault();
+        cyclePanes("prev");
+        return;
+      }
+
+      // Cmd+Shift+] - next pane
+      if (e.shiftKey && e.metaKey && e.key === "]") {
+        e.preventDefault();
+        cyclePanes("next");
         return;
       }
 
@@ -87,7 +137,7 @@ export function TerminalLayout({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focusedPaneId, maximizedPaneId, layout]);
+  }, [focusedPaneId, maximizedPaneId, layout, allPaneIds]);
 
   // Listen for close-pane event from Rust (Cmd+W)
   useEffect(() => {
@@ -389,9 +439,6 @@ export function TerminalLayout({
   }
 
   const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
-
-  // Get all pane IDs for the single sortable context
-  const allPaneIds = layout.rows.flatMap((row) => row.panes.map((p) => p.id));
 
   // Find the active pane for drag overlay
   const activePane = activeDragId
