@@ -187,10 +187,14 @@ export function TerminalPane({
       // Try to load WebGL addon for GPU-accelerated rendering
       try {
         const webglAddon = new WebglAddon();
-        webglAddon.onContextLoss(() => webglAddon.dispose());
+        webglAddon.onContextLoss(() => {
+          console.warn("WebGL context lost, falling back to canvas renderer");
+          webglAddon.dispose();
+        });
         terminal.loadAddon(webglAddon);
+        console.log("WebGL renderer active for terminal:", id);
       } catch (e) {
-        console.warn("WebGL addon failed to load:", e);
+        console.warn("WebGL addon failed to load, using canvas renderer:", e);
       }
 
       // Cmd+click to open URLs
