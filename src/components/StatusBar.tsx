@@ -2,19 +2,37 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { ProjectConfig } from "../lib/config";
 import type { GitStatus } from "../lib/git";
+import type { Task } from "../lib/tasks";
 
 interface StatusBarProps {
   selectedProject: ProjectConfig | null;
+  selectedTask?: Task | null;
+  onOpenGitPane?: () => void;
 }
 
 export const STATUS_BAR_HEIGHT = 24;
 
-export function StatusBar({ selectedProject }: StatusBarProps) {
+export function StatusBar({
+  selectedProject,
+  selectedTask,
+  onOpenGitPane,
+}: StatusBarProps) {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [loading, setLoading] = useState(false);
+  const activePath = selectedTask?.worktreePath || selectedProject?.path || null;
+  const displayName =
+    selectedProject && selectedTask
+      ? `${selectedProject.name} / ${selectedTask.name}`
+      : selectedProject?.name || null;
+  const canOpenGitPane = !!onOpenGitPane && !!gitStatus;
+
+  const handleOpenGitPane = () => {
+    if (!canOpenGitPane) return;
+    onOpenGitPane?.();
+  };
 
   useEffect(() => {
-    if (!selectedProject) {
+    if (!activePath) {
       setGitStatus(null);
       return;
     }
@@ -22,12 +40,12 @@ export function StatusBar({ selectedProject }: StatusBarProps) {
     let mounted = true;
 
     async function fetchGitStatus() {
-      if (!selectedProject?.path) return;
+      if (!activePath) return;
 
       setLoading(true);
       try {
         const status = await invoke<GitStatus>("get_git_status", {
-          path: selectedProject.path,
+          path: activePath,
         });
         if (mounted) {
           setGitStatus(status);
@@ -53,7 +71,7 @@ export function StatusBar({ selectedProject }: StatusBarProps) {
       mounted = false;
       clearInterval(interval);
     };
-  }, [selectedProject?.id, selectedProject?.path]);
+  }, [activePath]);
 
   const dirtyCount = gitStatus
     ? gitStatus.staged.length + gitStatus.unstaged.length + gitStatus.untracked.length
@@ -62,12 +80,27 @@ export function StatusBar({ selectedProject }: StatusBarProps) {
   return (
     <div style={styles.container}>
       <div style={styles.left}>
-        {selectedProject && (
-          <span style={styles.projectName}>{selectedProject.name}</span>
-        )}
+        {displayName && <span style={styles.projectName}>{displayName}</span>}
       </div>
-      <div style={styles.right}>
-        {selectedProject && gitStatus && (
+      <div
+        style={{
+          ...styles.right,
+          ...(canOpenGitPane ? styles.rightClickable : null),
+        }}
+        onClick={handleOpenGitPane}
+        onKeyDown={(e) => {
+          if (!canOpenGitPane) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpenGitPane?.();
+          }
+        }}
+        role={canOpenGitPane ? "button" : undefined}
+        tabIndex={canOpenGitPane ? 0 : undefined}
+        aria-label={canOpenGitPane ? "Open Git Panel" : undefined}
+        title={canOpenGitPane ? "Open Git Panel" : undefined}
+      >
+        {activePath && gitStatus && (
           <>
             {/* Branch name */}
             <div style={styles.item}>
@@ -96,7 +129,7 @@ export function StatusBar({ selectedProject }: StatusBarProps) {
             )}
           </>
         )}
-        {selectedProject && loading && !gitStatus && (
+        {activePath && loading && !gitStatus && (
           <span style={styles.loading}>...</span>
         )}
       </div>
@@ -127,6 +160,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: "16px",
+  },
+  rightClickable: {
+    cursor: "pointer",
   },
   projectName: {
     color: "var(--text-muted)",

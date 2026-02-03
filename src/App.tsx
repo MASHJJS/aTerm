@@ -351,6 +351,46 @@ export default function App() {
     }));
   }
 
+  function handleAddGitPaneToTask(task: Task) {
+    const layout = taskLayouts[task.id];
+    if (!layout || layout.rows.length === 0) return;
+
+    const hasGitPane = layout.rows.some((row) =>
+      row.panes.some((pane) => {
+        const profile = config.profiles.find((p) => p.id === pane.profileId);
+        return profile?.type === "git";
+      })
+    );
+
+    if (hasGitPane) return;
+
+    const newPane = {
+      id: crypto.randomUUID(),
+      profileId: "git",
+      flex: 1,
+    };
+
+    const newRows = layout.rows.map((row, index) => {
+      if (index === 0) {
+        return { ...row, panes: [...row.panes, newPane] };
+      }
+      return row;
+    });
+
+    setTaskLayouts((prev) => ({
+      ...prev,
+      [task.id]: { ...layout, rows: newRows },
+    }));
+  }
+
+  function handleOpenGitFromStatusBar() {
+    if (selectedTask && selectedProject) {
+      handleAddGitPaneToTask(selectedTask);
+      return;
+    }
+    handleAddGitPane();
+  }
+
   useEffect(() => {
     if (!selectedTask) return;
     const project = config.projects.find(
@@ -711,7 +751,11 @@ export default function App() {
         onClose={() => setCreateTaskProject(null)}
         onTaskCreated={handleTaskCreated}
       />
-      <StatusBar selectedProject={selectedProject} />
+      <StatusBar
+        selectedProject={selectedProject}
+        selectedTask={selectedTask}
+        onOpenGitPane={handleOpenGitFromStatusBar}
+      />
     </div>
   );
 }

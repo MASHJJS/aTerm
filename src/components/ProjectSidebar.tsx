@@ -3,7 +3,7 @@ import Fuse from "fuse.js";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Plus, GitBranch, X } from "lucide-react";
+import { Settings, Plus, GitBranch, X, Zap } from "lucide-react";
 import type { ProjectConfig, AppConfig } from "../lib/config";
 import { PROVIDERS } from "../lib/providers";
 import { AddProjectModal } from "./AddProjectModal";
@@ -227,6 +227,7 @@ export function ProjectSidebar({
                               isTaskSelected ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
                             )}
                           >
+                            <Zap className="h-3.5 w-3.5 opacity-70" />
                             <button
                               className="flex-1 text-left truncate"
                               onClick={() => onSelectTask(project.id, task.id)}
