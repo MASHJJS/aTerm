@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ export function ProjectSettingsModal({
   const [layoutId, setLayoutId] = useState(project.layoutId);
   const [icon, setIcon] = useState(project.icon || "");
   const [color, setColor] = useState(project.color || "");
+  const [skipPermissions, setSkipPermissions] = useState(project.skipPermissions || false);
 
   async function handleBrowse() {
     try {
@@ -86,18 +88,19 @@ export function ProjectSettingsModal({
       layoutId,
       icon: icon || undefined,
       color: color || undefined,
+      skipPermissions,
     });
     onClose();
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[400px]">
+      <DialogContent className="max-w-[400px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Project Settings</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 mt-2">
+        <div className="flex flex-col gap-4 mt-2 overflow-y-auto pr-2">
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Name
@@ -234,6 +237,24 @@ export function ProjectSettingsModal({
             <span className="text-[10px] text-muted-foreground">
               Applied to all terminal headers in this project
             </span>
+          </div>
+
+          <div className="border-t border-border pt-4 mt-2">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Advanced
+            </span>
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm">Skip Permissions</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Auto-accept tool calls in AI providers (Claude --dangerously-skip-permissions)
+                </span>
+              </div>
+              <Switch
+                checked={skipPermissions}
+                onCheckedChange={setSkipPermissions}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

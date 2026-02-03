@@ -25,6 +25,36 @@ import {
 import "@xterm/xterm/css/xterm.css";
 
 /**
+ * Strip ANSI escape codes from terminal output for pattern matching.
+ */
+function stripAnsi(s: string): string {
+  return s
+    .replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")
+    .replace(/\r/g, "")
+    .replace(/\x1b\][^\x07]*\x07/g, "");
+}
+
+/**
+ * Detect if CLI output indicates it's ready for input (idle state).
+ * Returns true if the output contains patterns suggesting the CLI is waiting for user input.
+ */
+function isCliIdle(chunk: string): boolean {
+  const text = stripAnsi(chunk);
+  if (!text) return false;
+
+  // Claude Code idle indicators
+  if (/❯.*Try\s+"/i.test(text)) return true; // Main prompt with suggestion
+  if (/bypass permissions/i.test(text)) return true; // Bottom status bar
+  if (/shift\+tab to cycle/i.test(text)) return true; // Bottom status bar
+  if (/MCP server/i.test(text)) return true; // MCP status indicator
+
+  // Generic CLI idle indicators
+  if (/Ready|Awaiting|Next command/i.test(text)) return true;
+
+  return false;
+}
+
+/**
  * Fit terminal while preserving scroll position.
  * If user is scrolled up, stay at the same position.
  * If user is at the bottom, stay at the bottom.
@@ -244,17 +274,26 @@ export function TerminalPane({
       invoke("spawn_pty", { id, cwd, cols: terminal.cols, rows: terminal.rows, command }).catch(console.error);
     }
 
-    let initialInputTimeout: number | null = null;
-    let initialFallbackTimeout: number | null = null;
+    // Initial prompt injection with debounce + idle detection
+    let silenceTimer: number | null = null;
+    let fallbackTimer: number | null = null;
     let initialPromptSent = false;
-    let initialPromptScheduled = false;
+
     const sendInitialPrompt = () => {
       if (initialPromptSent || !initialInput) return;
       initialPromptSent = true;
-      if (initialInputTimeout) clearTimeout(initialInputTimeout);
-      if (initialFallbackTimeout) clearTimeout(initialFallbackTimeout);
-      const payload = initialInput.endsWith("\n") ? initialInput : `${initialInput}\n`;
-      invoke("write_pty", { id, data: payload })
+      if (silenceTimer) clearTimeout(silenceTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+
+      // Send prompt text first, then Enter after a small delay
+      // This gives the CLI time to process the pasted text
+      invoke("write_pty", { id, data: initialInput })
+        .then(() => {
+          return new Promise(resolve => setTimeout(resolve, 50));
+        })
+        .then(() => {
+          return invoke("write_pty", { id, data: "\r" });
+        })
         .catch(console.error)
         .finally(() => {
           onInitialInputSentRef.current?.();
@@ -262,8 +301,13 @@ export function TerminalPane({
     };
 
     if (initialInput) {
-      // Fallback in case we never see output
-      initialFallbackTimeout = window.setTimeout(() => {
+      // Absolute fallback in case CLI never becomes idle (10s)
+      fallbackTimer = window.setTimeout(() => {
+        sendInitialPrompt();
+      }, 10000);
+
+      // Start silence timer when PTY spawns (2s initial wait)
+      silenceTimer = window.setTimeout(() => {
         sendInitialPrompt();
       }, 2000);
     }
@@ -291,17 +335,33 @@ export function TerminalPane({
       };
 
       listen<string>(`pty-output-${id}`, (event) => {
-        pendingData.push(base64ToUint8Array(event.payload));
+        const rawData = base64ToUint8Array(event.payload);
+        pendingData.push(rawData);
         if (!frameRequested) {
           frameRequested = true;
           requestAnimationFrame(flushPendingData);
         }
 
-        if (initialInput && !initialPromptSent && !initialPromptScheduled) {
-          initialPromptScheduled = true;
-          initialInputTimeout = window.setTimeout(() => {
+        // Debounce + idle detection for initial prompt injection
+        if (initialInput && !initialPromptSent) {
+          // Reset silence timer on each output (1.2s debounce)
+          if (silenceTimer) clearTimeout(silenceTimer);
+          silenceTimer = window.setTimeout(() => {
             sendInitialPrompt();
-          }, 250);
+          }, 1200);
+
+          // Check for idle patterns - send sooner if CLI is ready
+          try {
+            const text = new TextDecoder().decode(rawData);
+            if (isCliIdle(text)) {
+              if (silenceTimer) clearTimeout(silenceTimer);
+              silenceTimer = window.setTimeout(() => {
+                sendInitialPrompt();
+              }, 250);
+            }
+          } catch {
+            // Ignore decode errors
+          }
         }
       }).then((fn) => {
         unlistenFn = fn;
@@ -335,11 +395,11 @@ export function TerminalPane({
     });
 
     return () => {
-      if (initialInputTimeout) {
-        clearTimeout(initialInputTimeout);
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
       }
-      if (initialFallbackTimeout) {
-        clearTimeout(initialFallbackTimeout);
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
       }
       clearTimeout(resizeTimeout);
       terminal.element?.removeEventListener("click", handleTerminalClick);

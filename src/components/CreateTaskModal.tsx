@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -113,8 +114,9 @@ export function CreateTaskModal({ isOpen, project, onClose, onTaskCreated }: Pro
     if (!project || !trimmedName || !isGitRepo) return;
 
     if (dirtyCount > 0) {
-      const confirmed = window.confirm(
-        "This repository has uncommitted changes. Create a worktree anyway?"
+      const confirmed = await ask(
+        "This repository has uncommitted changes. Create a worktree anyway?",
+        { title: "Uncommitted Changes", kind: "warning" }
       );
       if (!confirmed) return;
     }
