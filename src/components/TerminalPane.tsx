@@ -24,6 +24,26 @@ import {
 } from "./terminal-pane";
 import "@xterm/xterm/css/xterm.css";
 
+/**
+ * Fit terminal while preserving scroll position.
+ * If user is scrolled up, stay at the same position.
+ * If user is at the bottom, stay at the bottom.
+ */
+function fitPreservingScroll(terminal: Terminal, fitAddon: FitAddon) {
+  const buffer = terminal.buffer.active;
+  const viewportY = buffer.viewportY;
+  const baseY = buffer.baseY;
+  const isAtBottom = viewportY >= baseY;
+
+  fitAddon.fit();
+
+  if (!isAtBottom) {
+    // User was scrolled up - restore their position
+    terminal.scrollToLine(viewportY);
+  }
+  // If at bottom, fit() keeps us there naturally
+}
+
 // Re-export for external use
 export { killPty, serializeRefs } from "./terminal-pane";
 
@@ -262,7 +282,7 @@ export function TerminalPane({
     const resizeObserver = new ResizeObserver(() => {
       clearTimeout(resizeTimeout);
       resizeTimeout = window.setTimeout(() => {
-        fitAddon.fit();
+        fitPreservingScroll(terminal, fitAddon);
         invoke("resize_pty", { id, cols: terminal.cols, rows: terminal.rows }).catch(console.error);
       }, 100);
     });
@@ -294,10 +314,10 @@ export function TerminalPane({
 
   // Refit on maximize
   useEffect(() => {
-    if (fitAddonRef.current) {
+    if (fitAddonRef.current && terminalRef.current) {
       const timeout = setTimeout(() => {
-        fitAddonRef.current?.fit();
-        if (terminalRef.current) {
+        if (fitAddonRef.current && terminalRef.current) {
+          fitPreservingScroll(terminalRef.current, fitAddonRef.current);
           invoke("resize_pty", { id, cols: terminalRef.current.cols, rows: terminalRef.current.rows }).catch(console.error);
         }
       }, 50);
@@ -307,9 +327,9 @@ export function TerminalPane({
 
   // Update font size
   useEffect(() => {
-    if (terminalRef.current) {
+    if (terminalRef.current && fitAddonRef.current) {
       terminalRef.current.options.fontSize = fontSize;
-      fitAddonRef.current?.fit();
+      fitPreservingScroll(terminalRef.current, fitAddonRef.current);
       invoke("resize_pty", { id, cols: terminalRef.current.cols, rows: terminalRef.current.rows }).catch(console.error);
     }
   }, [fontSize, id]);
