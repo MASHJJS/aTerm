@@ -36,7 +36,13 @@ aTerm gives you predefined layouts optimized for these workflows, with instant p
 |----------|--------|
 | Cmd+1-9 | Switch to project 1-9 |
 | Cmd+B | Toggle sidebar |
+| Cmd+P | File search |
+| Shift+Cmd+G | Toggle git panel |
+| Shift+Cmd+E | Toggle editor pane |
+| Shift+Cmd+N | Scratch notes |
 | Shift+Cmd+Enter | Maximize/restore focused pane |
+| Shift+Cmd+[ / ] | Previous/next pane |
+| Shift+Cmd+M | Minimize pane |
 | Cmd+D | Split pane with shell |
 | Cmd+W | Close focused pane |
 | Cmd++ | Increase font size |

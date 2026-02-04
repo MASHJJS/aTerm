@@ -8,6 +8,7 @@ interface UseKeyboardShortcutsProps {
   onToggleSidebar: () => void;
   onOpenScratchNotes: () => void;
   onAddEditorPane?: () => void;
+  onAddGitPane?: () => void;
   onOpenFileSearch?: () => void;
 }
 
@@ -18,6 +19,7 @@ export function useKeyboardShortcuts({
   onToggleSidebar,
   onOpenScratchNotes,
   onAddEditorPane,
+  onAddGitPane,
   onOpenFileSearch,
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
@@ -42,11 +44,18 @@ export function useKeyboardShortcuts({
           onOpenScratchNotes();
         }
       }
-      // Cmd+Shift+E: Add editor pane
+      // Cmd+Shift+E: Toggle editor pane
       if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "e") {
         if (selectedProject && onAddEditorPane) {
           e.preventDefault();
           onAddEditorPane();
+        }
+      }
+      // Cmd+Shift+G: Toggle git panel
+      if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "g") {
+        if (selectedProject && onAddGitPane) {
+          e.preventDefault();
+          onAddGitPane();
         }
       }
       // Cmd+P: Open file search
@@ -60,5 +69,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [projects, selectedProject, onSelectProject, onToggleSidebar, onOpenScratchNotes, onAddEditorPane, onOpenFileSearch]);
+  }, [projects, selectedProject, onSelectProject, onToggleSidebar, onOpenScratchNotes, onAddEditorPane, onAddGitPane, onOpenFileSearch]);
 }

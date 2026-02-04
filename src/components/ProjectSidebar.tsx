@@ -137,7 +137,7 @@ export function ProjectSidebar({
             <span />
           )}
           <div className="flex gap-1">
-            <SimpleTooltip content="Git Panel" disabled={!selectedProject}>
+            <SimpleTooltip content="Git Panel" shortcut="⇧⌘G" disabled={!selectedProject}>
               <Button
                 variant="ghost"
                 size="icon-sm"

@@ -8,7 +8,8 @@ import { GitPanelTabs, GitTab } from "./GitPanelTabs";
 import { FileChanges } from "./FileChanges";
 import { DiffViewer } from "./DiffViewer";
 import { DiffModal } from "./DiffModal";
-import { FileEditor } from "./FileEditor";
+import { CodeEditor } from "@/components/editor/CodeEditor";
+import { getLanguageFromPath } from "@/lib/editor";
 import { CommitForm } from "./CommitForm";
 import { CommitHistory } from "./CommitHistory";
 
@@ -39,7 +40,10 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
   const [error, setError] = useState<string | null>(null);
   const [modalFile, setModalFile] = useState<GitFile | null>(null);
   const [modalDiff, setModalDiff] = useState<string>("");
-  const [editorFile, setEditorFile] = useState<GitFile | null>(null);
+  const [viewMode, setViewMode] = useState<"diff" | "edit">("diff");
+  const [editContent, setEditContent] = useState<string>("");
+  const [editOriginalContent, setEditOriginalContent] = useState<string>("");
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
   const pollRef = useRef<number | null>(null);
 
   const loadStatus = useCallback(async () => {
@@ -79,6 +83,7 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
 
   function handleSelectFile(file: GitFile) {
     setSelectedFile(file);
+    setViewMode("diff");
     loadDiff(file);
   }
 
@@ -166,8 +171,34 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
     }
   }
 
-  function handleEdit(file: GitFile) {
-    setEditorFile(file);
+  async function handleEdit(file: GitFile) {
+    setSelectedFile(file);
+    setViewMode("edit");
+    setIsLoadingFile(true);
+    try {
+      const fullPath = `${cwd}/${file.path}`;
+      const content = await invoke<string>("read_file_content", { path: fullPath });
+      setEditContent(content);
+      setEditOriginalContent(content);
+    } catch (err) {
+      console.error("Failed to load file:", err);
+      setViewMode("diff");
+    } finally {
+      setIsLoadingFile(false);
+    }
+  }
+
+  async function handleInlineSave() {
+    if (!selectedFile || editContent === editOriginalContent) return;
+    try {
+      const fullPath = `${cwd}/${selectedFile.path}`;
+      await invoke("write_file_content", { path: fullPath, content: editContent });
+      setEditOriginalContent(editContent);
+      await loadStatus();
+      await loadDiff(selectedFile);
+    } catch (err) {
+      console.error("Failed to save file:", err);
+    }
   }
 
   async function handleOpenInEditor(file: GitFile, editor: string) {
@@ -176,13 +207,6 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
       await invoke("open_in_editor", { path: fullPath, editor });
     } catch (err) {
       console.error("Failed to open in editor:", err);
-    }
-  }
-
-  function handleEditorSave() {
-    loadStatus();
-    if (selectedFile) {
-      loadDiff(selectedFile);
     }
   }
 
@@ -288,8 +312,59 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
                 />
               )}
             </div>
-            <div className="flex-1 flex overflow-hidden">
-              <DiffViewer diff={diff} fileName={selectedFile?.path} />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {viewMode === "edit" && selectedFile ? (
+                <>
+                  <div className="px-3 py-1.5 flex items-center justify-between bg-secondary border-b border-border">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[11px] font-medium text-foreground truncate">{selectedFile.path}</span>
+                      {editContent !== editOriginalContent && (
+                        <span className="text-[10px] text-yellow-500 px-1 py-0.5 bg-yellow-500/15 rounded shrink-0">Modified</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 ml-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setViewMode("diff")}
+                        className="h-6 w-6"
+                        title="Diff view"
+                      >
+                        <span className="text-[10px] font-medium">Diff</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-6 w-6 bg-accent text-foreground"
+                        title="Edit file"
+                      >
+                        <span className="text-[10px] font-medium">Edit</span>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    {isLoadingFile ? (
+                      <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs h-full">Loading...</div>
+                    ) : (
+                      <CodeEditor
+                        content={editContent}
+                        language={getLanguageFromPath(selectedFile.path)}
+                        filePath={selectedFile.path}
+                        projectRoot={cwd}
+                        onChange={setEditContent}
+                        onSave={handleInlineSave}
+                      />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <DiffViewer
+                  diff={diff}
+                  fileName={selectedFile?.path}
+                  viewMode="diff"
+                  onToggleEdit={selectedFile ? () => handleEdit(selectedFile) : undefined}
+                />
+              )}
             </div>
           </div>
           <CommitForm
@@ -309,21 +384,13 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
         diff={modalDiff}
         fileName={modalFile?.path || ""}
         onEdit={modalFile ? () => {
-          setEditorFile(modalFile);
+          handleEdit(modalFile);
           setModalFile(null);
         } : undefined}
         onOpenInEditor={modalFile ? (editor) => {
           handleOpenInEditor(modalFile, editor);
         } : undefined}
       />
-
-      {editorFile && (
-        <FileEditor
-          filePath={`${cwd}/${editorFile.path}`}
-          onClose={() => setEditorFile(null)}
-          onSave={handleEditorSave}
-        />
-      )}
     </div>
   );
 }

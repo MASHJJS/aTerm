@@ -83,6 +83,7 @@ export default function App() {
     onToggleSidebar: () => setSidebarVisible((prev) => !prev),
     onOpenScratchNotes: () => setShowNotesModal(true),
     onAddEditorPane: handleAddEditorPane,
+    onAddGitPane: handleAddGitPane,
     onOpenFileSearch: () => setShowFileSearch(true),
   });
 

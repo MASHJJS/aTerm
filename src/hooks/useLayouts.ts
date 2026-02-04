@@ -114,24 +114,49 @@ export function useLayouts({ config, updateConfig, selectedProject }: UseLayouts
     const layout = runtimeLayouts[selectedProject.id];
     if (!layout || layout.rows.length === 0) return;
 
-    const hasGitPane = layout.rows.some((row) =>
-      row.panes.some((pane) => {
+    // Find existing git pane
+    let gitPaneLocation: { rowIndex: number; paneIndex: number } | null = null;
+    for (let rowIndex = 0; rowIndex < layout.rows.length; rowIndex++) {
+      const row = layout.rows[rowIndex];
+      for (let paneIndex = 0; paneIndex < row.panes.length; paneIndex++) {
+        const pane = row.panes[paneIndex];
         const profile = config.profiles.find((p) => p.id === pane.profileId);
-        return profile?.type === "git";
-      })
-    );
-
-    if (hasGitPane) return;
-
-    const newPane = { id: crypto.randomUUID(), profileId: "git", flex: 1 };
-    const newRows = layout.rows.map((row, index) => {
-      if (index === 0) {
-        return { ...row, panes: [...row.panes, newPane] };
+        if (profile?.type === "git") {
+          gitPaneLocation = { rowIndex, paneIndex };
+          break;
+        }
       }
-      return row;
-    });
+      if (gitPaneLocation) break;
+    }
 
-    handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+    if (gitPaneLocation) {
+      // Remove the git pane (toggle off)
+      const totalPanes = layout.rows.reduce((acc, r) => acc + r.panes.length, 0);
+      if (totalPanes <= 1) return; // Don't remove the last pane
+
+      const newRows = layout.rows
+        .map((row, rowIndex) => {
+          if (rowIndex !== gitPaneLocation!.rowIndex) return row;
+          return {
+            ...row,
+            panes: row.panes.filter((_, i) => i !== gitPaneLocation!.paneIndex),
+          };
+        })
+        .filter((row) => row.panes.length > 0);
+
+      handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+    } else {
+      // Add a new git pane (toggle on)
+      const newPane = { id: crypto.randomUUID(), profileId: "git", flex: 1 };
+      const newRows = layout.rows.map((row, index) => {
+        if (index === 0) {
+          return { ...row, panes: [...row.panes, newPane] };
+        }
+        return row;
+      });
+
+      handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+    }
   }
 
   function handleAddEditorPane() {

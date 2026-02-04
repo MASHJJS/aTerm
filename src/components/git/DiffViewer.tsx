@@ -1,9 +1,15 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { FileText, Pencil } from "lucide-react";
+
+type ViewMode = "diff" | "edit";
 
 interface Props {
   diff: string;
   fileName?: string;
+  viewMode?: ViewMode;
+  onToggleEdit?: () => void;
 }
 
 interface DiffLine {
@@ -12,7 +18,7 @@ interface DiffLine {
   lineNumber?: { old?: number; new?: number };
 }
 
-export function DiffViewer({ diff, fileName }: Props) {
+export function DiffViewer({ diff, fileName, viewMode, onToggleEdit }: Props) {
   const lines = useMemo(() => parseDiff(diff), [diff]);
 
   if (!diff) {
@@ -26,8 +32,36 @@ export function DiffViewer({ diff, fileName }: Props) {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       {fileName && (
-        <div className="px-3 py-2 text-[11px] font-medium text-foreground bg-secondary border-b border-border">
-          {fileName}
+        <div className="px-3 py-1.5 flex items-center justify-between bg-secondary border-b border-border">
+          <span className="text-[11px] font-medium text-foreground truncate">{fileName}</span>
+          {onToggleEdit && (
+            <div className="flex items-center gap-0.5 ml-2 shrink-0">
+              <Button
+                variant={viewMode === "diff" ? "secondary" : "ghost"}
+                size="icon-sm"
+                onClick={undefined}
+                className={cn(
+                  "h-6 w-6",
+                  viewMode === "diff" && "bg-accent text-foreground"
+                )}
+                title="Diff view"
+              >
+                <FileText className="h-3 w-3" />
+              </Button>
+              <Button
+                variant={viewMode === "edit" ? "secondary" : "ghost"}
+                size="icon-sm"
+                onClick={onToggleEdit}
+                className={cn(
+                  "h-6 w-6",
+                  viewMode === "edit" && "bg-accent text-foreground"
+                )}
+                title="Edit file"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
       <div className="flex-1 overflow-auto font-mono text-xs leading-relaxed">
