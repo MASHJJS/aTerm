@@ -41,7 +41,7 @@ done
 TAURI_KEY_PATH="$HOME/.tauri/aterm.key"
 if [ -f "$TAURI_KEY_PATH" ]; then
     export TAURI_SIGNING_PRIVATE_KEY=$(cat "$TAURI_KEY_PATH")
-    export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+    export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="aterm"
     echo -e "${GREEN}Tauri signing key loaded${NC}"
 else
     echo -e "${RED}Missing Tauri signing key at $TAURI_KEY_PATH${NC}"
@@ -171,9 +171,26 @@ LATEST_JSON="src-tauri/target/release/bundle/macos/latest.json"
 
 RELEASE_FILES=("$DMG_PATH")
 
-if [ -f "$UPDATE_BUNDLE" ] && [ -f "$LATEST_JSON" ]; then
+if [ -f "$UPDATE_BUNDLE" ] && [ -f "$UPDATE_SIG" ]; then
+    SIGNATURE=$(cat "$UPDATE_SIG")
+    PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    cat > "$LATEST_JSON" <<ENDJSON
+{
+  "version": "${VERSION}",
+  "notes": "",
+  "pub_date": "${PUB_DATE}",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "${SIGNATURE}",
+      "url": "https://github.com/saadnvd1/aterm/releases/download/v${VERSION}/aTerm.app.tar.gz"
+    }
+  }
+}
+ENDJSON
+
     RELEASE_FILES+=("$UPDATE_BUNDLE" "$LATEST_JSON")
-    echo -e "${GREEN}Update bundle found - auto-updater will work for this release${NC}"
+    echo -e "${GREEN}Update bundle + latest.json generated - auto-updater will work${NC}"
 else
     echo -e "${YELLOW}Warning: Update bundle not found - auto-updater won't work for this release${NC}"
 fi
