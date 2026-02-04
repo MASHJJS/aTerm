@@ -1,5 +1,4 @@
 import { useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import Editor, { OnMount, OnChange, BeforeMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
@@ -12,90 +11,46 @@ interface Props {
   onSave?: () => void;
 }
 
-interface TypeDefinition {
-  path: string;
-  content: string;
-}
-
-// Track which projects we've loaded types for
-const loadedProjects = new Set<string>();
-let monacoInstance: any = null;
-
 export function CodeEditor({ content, language, filePath, projectRoot, onChange, onSave }: Props) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
   const handleBeforeMount: BeforeMount = (monaco) => {
-    monacoInstance = monaco;
-
-    // Configure TypeScript/JavaScript compiler options
     const ts = (monaco.languages as any).typescript;
     if (!ts) return;
 
-    const compilerOptions = {
+    // Configure TypeScript/JavaScript compiler options
+    ts.typescriptDefaults.setCompilerOptions({
       target: ts.ScriptTarget.ESNext,
       module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.NodeJs,
       jsx: ts.JsxEmit.ReactJSX,
-      strict: true,
-      esModuleInterop: true,
-      skipLibCheck: true,
-      forceConsistentCasingInFileNames: true,
-      resolveJsonModule: true,
-      isolatedModules: true,
-      noEmit: true,
-      allowSyntheticDefaultImports: true,
       allowJs: true,
-      checkJs: false,
-      reactNamespace: "React",
-      // Needed for proper JSX support
-      jsxImportSource: "react",
-    };
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+    });
 
-    ts.typescriptDefaults.setCompilerOptions(compilerOptions);
-    ts.javascriptDefaults.setCompilerOptions(compilerOptions);
+    ts.javascriptDefaults.setCompilerOptions({
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      jsx: ts.JsxEmit.ReactJSX,
+      allowJs: true,
+      allowSyntheticDefaultImports: true,
+      esModuleInterop: true,
+    });
 
-    // Enable full validation
+    // Disable semantic validation (module resolution, cross-file type checking)
+    // since Monaco doesn't have access to the full filesystem.
+    // Syntax validation still catches actual syntax errors.
+    // Use `tsc --noEmit` in terminal for full type checking.
     ts.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
+      noSemanticValidation: true,
       noSyntaxValidation: false,
     });
 
     ts.javascriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
+      noSemanticValidation: true,
       noSyntaxValidation: false,
     });
-
-    // Set eager model sync for better multi-file support
-    ts.typescriptDefaults.setEagerModelSync(true);
   };
-
-  // Load type definitions for the project
-  useEffect(() => {
-    if (!monacoInstance || loadedProjects.has(projectRoot)) return;
-
-    async function loadTypes() {
-      try {
-        const definitions = await invoke<TypeDefinition[]>("read_type_definitions", {
-          root: projectRoot,
-        });
-
-        const ts = (monacoInstance.languages as any).typescript;
-        if (!ts) return;
-
-        for (const def of definitions) {
-          const uri = `file:///` + def.path;
-          ts.typescriptDefaults.addExtraLib(def.content, uri);
-        }
-
-        loadedProjects.add(projectRoot);
-        console.log(`Loaded ${definitions.length} type definitions for ${projectRoot}`);
-      } catch (err) {
-        console.warn("Failed to load type definitions:", err);
-      }
-    }
-
-    loadTypes();
-  }, [projectRoot]);
 
   const handleMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;

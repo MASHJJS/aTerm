@@ -13,7 +13,7 @@ mod window;
 mod worktree;
 
 use config::{load_config, save_config};
-use directory::{get_home_dir, list_all_project_files, list_directory, list_project_directory, read_type_definitions};
+use directory::{get_home_dir, list_all_project_files, list_directory, list_project_directory};
 use file_ops::{open_in_editor, read_file_content, write_file_content};
 use git::{
     clone_repo,
@@ -61,7 +61,6 @@ pub fn run() {
             list_directory,
             list_project_directory,
             list_all_project_files,
-            read_type_definitions,
             get_home_dir,
             clone_repo,
             get_git_remote,
