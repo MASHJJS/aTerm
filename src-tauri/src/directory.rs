@@ -16,7 +16,7 @@ pub struct DirEntry {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectFileEntry {
     name: String,
-    path: String,     // Relative path from project root
+    path: String, // Relative path from project root
     is_dir: bool,
 }
 
@@ -30,7 +30,7 @@ const IGNORED_DIRS: &[&str] = &[
     ".nuxt",
     ".turbo",
     ".vercel",
-    "target",      // Rust/Cargo
+    "target", // Rust/Cargo
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
@@ -76,12 +76,10 @@ pub fn list_directory(path: Option<String>) -> Result<Vec<DirEntry>, String> {
         });
     }
 
-    entries.sort_by(|a, b| {
-        match (a.is_dir, b.is_dir) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        }
+    entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
     Ok(entries)
@@ -142,12 +140,10 @@ pub fn list_project_directory(
     }
 
     // Sort: directories first, then alphabetically
-    entries.sort_by(|a, b| {
-        match (a.is_dir, b.is_dir) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        }
+    entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
     Ok(entries)

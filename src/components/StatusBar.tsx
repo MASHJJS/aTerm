@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { ProjectConfig } from "../lib/config";
 import type { GitStatus } from "../lib/git";
 import type { Task } from "../lib/tasks";
+import { useAutoUpdater } from "../hooks/useAutoUpdater";
 
 interface StatusBarProps {
   selectedProject: ProjectConfig | null;
@@ -17,6 +18,7 @@ export function StatusBar({
   selectedTask,
   onOpenGitPane,
 }: StatusBarProps) {
+  const updater = useAutoUpdater();
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const activePath = selectedTask?.worktreePath || selectedProject?.path || null;
@@ -81,6 +83,49 @@ export function StatusBar({
     <div style={styles.container}>
       <div style={styles.left}>
         {displayName && <span style={styles.projectName}>{displayName}</span>}
+        {updater.available && (
+          <div style={styles.updateBanner}>
+            {updater.downloading ? (
+              <span style={styles.updateText}>
+                Updating... {updater.progress}%
+              </span>
+            ) : updater.error ? (
+              <>
+                <span style={styles.updateError}>Update failed</span>
+                <button
+                  style={styles.updateButton}
+                  onClick={updater.install}
+                >
+                  Retry
+                </button>
+                <button
+                  style={styles.dismissButton}
+                  onClick={updater.dismiss}
+                >
+                  ×
+                </button>
+              </>
+            ) : (
+              <>
+                <span style={styles.updateText}>
+                  v{updater.version} available
+                </span>
+                <button
+                  style={styles.updateButton}
+                  onClick={updater.install}
+                >
+                  Update & Restart
+                </button>
+                <button
+                  style={styles.dismissButton}
+                  onClick={updater.dismiss}
+                >
+                  ×
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
       <div
         style={{
@@ -197,5 +242,39 @@ const styles: Record<string, React.CSSProperties> = {
   },
   loading: {
     opacity: 0.5,
+  },
+  updateBanner: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  updateText: {
+    color: "#61afef",
+    fontSize: "11px",
+  },
+  updateError: {
+    color: "#e06c75",
+    fontSize: "11px",
+  },
+  updateButton: {
+    background: "#61afef",
+    color: "#1a1a1a",
+    border: "none",
+    borderRadius: "3px",
+    padding: "1px 8px",
+    fontSize: "11px",
+    cursor: "pointer",
+    fontWeight: 600,
+    lineHeight: "16px",
+  },
+  dismissButton: {
+    background: "none",
+    border: "none",
+    color: "var(--text-muted)",
+    cursor: "pointer",
+    padding: "0 2px",
+    fontSize: "14px",
+    lineHeight: "14px",
+    opacity: 0.6,
   },
 };

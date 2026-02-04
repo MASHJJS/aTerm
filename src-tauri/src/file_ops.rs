@@ -5,16 +5,8 @@ pub fn open_in_editor(path: String, editor: Option<String>) -> Result<(), String
     let editor = editor.unwrap_or_else(|| "default".to_string());
 
     let result = match editor.as_str() {
-        "vscode" | "code" => {
-            std::process::Command::new("code")
-                .arg(&path)
-                .spawn()
-        }
-        "cursor" => {
-            std::process::Command::new("cursor")
-                .arg(&path)
-                .spawn()
-        }
+        "vscode" | "code" => std::process::Command::new("code").arg(&path).spawn(),
+        "cursor" => std::process::Command::new("cursor").arg(&path).spawn(),
         _ => {
             // Use system default - 'open' on macOS
             #[cfg(target_os = "macos")]
@@ -26,9 +18,7 @@ pub fn open_in_editor(path: String, editor: Option<String>) -> Result<(), String
             }
             #[cfg(not(target_os = "macos"))]
             {
-                std::process::Command::new("xdg-open")
-                    .arg(&path)
-                    .spawn()
+                std::process::Command::new("xdg-open").arg(&path).spawn()
             }
         }
     };

@@ -1,4 +1,4 @@
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -40,7 +40,12 @@ pub fn spawn_pty(
     let mut cmd = if let Some(ref command) = command {
         // Run command, then exec a new shell when it exits
         let mut c = CommandBuilder::new(&shell);
-        c.args(["-l", "-i", "-c", &format!("{}; exec {} -l -i", command, shell)]);
+        c.args([
+            "-l",
+            "-i",
+            "-c",
+            &format!("{}; exec {} -l -i", command, shell),
+        ]);
         c
     } else {
         let mut c = CommandBuilder::new(&shell);
@@ -57,7 +62,14 @@ pub fn spawn_pty(
 
     {
         let mut ptys = state.lock().unwrap();
-        ptys.insert(id.clone(), PtyHandle { master: pair.master, writer, child });
+        ptys.insert(
+            id.clone(),
+            PtyHandle {
+                master: pair.master,
+                writer,
+                child,
+            },
+        );
     }
 
     let event_id = id.clone();

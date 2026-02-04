@@ -16,30 +16,13 @@ use config::{load_config, save_config};
 use directory::{get_home_dir, list_all_project_files, list_directory, list_project_directory};
 use file_ops::{open_in_editor, read_file_content, write_file_content};
 use git::{
-    clone_repo,
-    discard_changes,
-    get_commit_diff,
-    get_commit_files,
-    get_commit_history,
-    get_file_diff,
-    get_git_remote,
-    get_git_status,
-    git_commit,
-    git_push,
-    stage_all,
-    stage_files,
-    unstage_all,
-    unstage_files,
+    clone_repo, discard_changes, get_commit_diff, get_commit_files, get_commit_history,
+    get_file_diff, get_git_remote, get_git_status, git_commit, git_push, stage_all, stage_files,
+    unstage_all, unstage_files,
 };
 use iterm::get_iterm_profiles;
 use pty::{
-    force_exit,
-    get_active_pty_count,
-    kill_all_ptys,
-    kill_pty,
-    resize_pty,
-    spawn_pty,
-    write_pty,
+    force_exit, get_active_pty_count, kill_all_ptys, kill_pty, resize_pty, spawn_pty, write_pty,
     PtyMap,
 };
 use window::{close_detached_window, create_detached_window, list_detached_windows};
@@ -54,6 +37,8 @@ pub fn run() {
     let pty_map: PtyMap = Arc::new(Mutex::new(HashMap::new()));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(pty_map)
         .invoke_handler(tauri::generate_handler![
             load_config,
@@ -117,7 +102,10 @@ pub fn run() {
             let file_menu = SubmenuBuilder::new(app, "File")
                 .item(&close_pane)
                 .separator()
-                .item(&PredefinedMenuItem::close_window(app, Some("Close Window"))?)
+                .item(&PredefinedMenuItem::close_window(
+                    app,
+                    Some("Close Window"),
+                )?)
                 .separator()
                 .item(&PredefinedMenuItem::quit(app, Some("Quit"))?)
                 .build()?;

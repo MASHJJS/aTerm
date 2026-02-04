@@ -87,13 +87,22 @@ pub fn get_git_status(path: String) -> Result<GitStatus, String> {
         .args(["-C", &path, "branch", "--show-current"])
         .output()
         .map_err(|e| e.to_string())?;
-    let branch = String::from_utf8_lossy(&branch_output.stdout).trim().to_string();
+    let branch = String::from_utf8_lossy(&branch_output.stdout)
+        .trim()
+        .to_string();
 
     // Get ahead/behind counts
     let mut ahead = 0;
     let mut behind = 0;
     let revlist_output = std::process::Command::new("git")
-        .args(["-C", &path, "rev-list", "--left-right", "--count", "@{upstream}...HEAD"])
+        .args([
+            "-C",
+            &path,
+            "rev-list",
+            "--left-right",
+            "--count",
+            "@{upstream}...HEAD",
+        ])
         .output();
 
     if let Ok(output) = revlist_output {
@@ -239,7 +248,13 @@ pub fn stage_all(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn unstage_files(path: String, files: Vec<String>) -> Result<(), String> {
-    let mut args = vec!["-C".to_string(), path, "reset".to_string(), "HEAD".to_string(), "--".to_string()];
+    let mut args = vec![
+        "-C".to_string(),
+        path,
+        "reset".to_string(),
+        "HEAD".to_string(),
+        "--".to_string(),
+    ];
     args.extend(files);
 
     let output = std::process::Command::new("git")
@@ -319,7 +334,9 @@ pub fn git_push(path: String) -> Result<String, String> {
         .args(["-C", &path, "branch", "--show-current"])
         .output()
         .map_err(|e| e.to_string())?;
-    let branch = String::from_utf8_lossy(&branch_output.stdout).trim().to_string();
+    let branch = String::from_utf8_lossy(&branch_output.stdout)
+        .trim()
+        .to_string();
 
     let output = std::process::Command::new("git")
         .args(["-C", &path, "push", "-u", "origin", &branch])
@@ -338,7 +355,13 @@ pub fn get_commit_history(path: String, limit: i32) -> Result<Vec<CommitSummary>
     // Get commit info with custom format
     let format = "%H|%h|%s|%an|%ct";
     let output = std::process::Command::new("git")
-        .args(["-C", &path, "log", &format!("--format={}", format), &format!("-n{}", limit)])
+        .args([
+            "-C",
+            &path,
+            "log",
+            &format!("--format={}", format),
+            &format!("-n{}", limit),
+        ])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -413,7 +436,15 @@ pub fn get_commit_history(path: String, limit: i32) -> Result<Vec<CommitSummary>
 #[tauri::command]
 pub fn get_commit_files(path: String, hash: String) -> Result<Vec<CommitFile>, String> {
     let output = std::process::Command::new("git")
-        .args(["-C", &path, "show", "--numstat", "--name-status", "--format=", &hash])
+        .args([
+            "-C",
+            &path,
+            "show",
+            "--numstat",
+            "--name-status",
+            "--format=",
+            &hash,
+        ])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -518,7 +549,11 @@ pub fn get_git_remote(path: String) -> Result<Option<String>, String> {
 
     if output.status.success() {
         let remote = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        Ok(if remote.is_empty() { None } else { Some(remote) })
+        Ok(if remote.is_empty() {
+            None
+        } else {
+            Some(remote)
+        })
     } else {
         Ok(None)
     }

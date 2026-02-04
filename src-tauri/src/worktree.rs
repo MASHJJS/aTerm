@@ -110,14 +110,12 @@ fn copy_preserved_files(project_path: &Path, worktree_path: &Path) -> Result<(),
         }
 
         let name = entry.file_name().to_string_lossy().to_string();
-        let should_copy = name == ".envrc"
-            || name == "docker-compose.override.yml"
-            || name.starts_with(".env");
+        let should_copy =
+            name == ".envrc" || name == "docker-compose.override.yml" || name.starts_with(".env");
 
         if should_copy {
             let dest = worktree_path.join(&name);
-            fs::copy(&path, &dest)
-                .map_err(|e| format!("Failed to copy {}: {}", name, e))?;
+            fs::copy(&path, &dest).map_err(|e| format!("Failed to copy {}: {}", name, e))?;
         }
     }
 
@@ -199,12 +197,7 @@ pub fn create_worktree(
 #[tauri::command]
 pub fn remove_worktree(worktree_path: String) -> Result<(), String> {
     let common_dir_output = Command::new("git")
-        .args([
-            "-C",
-            &worktree_path,
-            "rev-parse",
-            "--git-common-dir",
-        ])
+        .args(["-C", &worktree_path, "rev-parse", "--git-common-dir"])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -262,7 +255,9 @@ pub fn list_worktrees(project_path: String) -> Result<Vec<WorktreeInfo>, String>
     for line in text.lines() {
         if let Some(rest) = line.strip_prefix("worktree ") {
             if let Some(path) = current_path.take() {
-                let branch = current_branch.take().unwrap_or_else(|| "detached".to_string());
+                let branch = current_branch
+                    .take()
+                    .unwrap_or_else(|| "detached".to_string());
                 results.push(WorktreeInfo { path, branch });
             }
             current_path = Some(rest.trim().to_string());

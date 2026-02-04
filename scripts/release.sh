@@ -37,6 +37,18 @@ for var in APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
     fi
 done
 
+# Set up Tauri updater signing key
+TAURI_KEY_PATH="$HOME/.tauri/aterm.key"
+if [ -f "$TAURI_KEY_PATH" ]; then
+    export TAURI_SIGNING_PRIVATE_KEY=$(cat "$TAURI_KEY_PATH")
+    export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+    echo -e "${GREEN}Tauri signing key loaded${NC}"
+else
+    echo -e "${RED}Missing Tauri signing key at $TAURI_KEY_PATH${NC}"
+    echo "Generate one with: npx tauri signer generate -w ~/.tauri/aterm.key"
+    exit 1
+fi
+
 # Clean old bundle to ensure fresh build
 rm -rf src-tauri/target/release/bundle
 
@@ -152,9 +164,23 @@ ${CHANGELOG}
 
 Signed and notarized for macOS."
 
+# Locate update bundle files
+UPDATE_BUNDLE="src-tauri/target/release/bundle/macos/aTerm.app.tar.gz"
+UPDATE_SIG="src-tauri/target/release/bundle/macos/aTerm.app.tar.gz.sig"
+LATEST_JSON="src-tauri/target/release/bundle/macos/latest.json"
+
+RELEASE_FILES=("$DMG_PATH")
+
+if [ -f "$UPDATE_BUNDLE" ] && [ -f "$LATEST_JSON" ]; then
+    RELEASE_FILES+=("$UPDATE_BUNDLE" "$LATEST_JSON")
+    echo -e "${GREEN}Update bundle found - auto-updater will work for this release${NC}"
+else
+    echo -e "${YELLOW}Warning: Update bundle not found - auto-updater won't work for this release${NC}"
+fi
+
 gh release create "v${VERSION}" \
     --title "aTerm v${VERSION}" \
     --notes "$NOTES" \
-    "$DMG_PATH"
+    "${RELEASE_FILES[@]}"
 
 echo -e "${GREEN}Released: https://github.com/saadnvd1/aterm/releases/tag/v${VERSION}${NC}"

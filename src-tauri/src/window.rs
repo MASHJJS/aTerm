@@ -23,10 +23,7 @@ pub async fn create_detached_window(
     config: WindowConfig,
 ) -> Result<String, String> {
     let label = format!("{}-{}", config.window_type, config.id);
-    let url = format!(
-        "index.html?mode={}&id={}",
-        config.window_type, config.id
-    );
+    let url = format!("index.html?mode={}&id={}", config.window_type, config.id);
 
     let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(&config.title)

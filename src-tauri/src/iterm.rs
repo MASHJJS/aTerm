@@ -20,13 +20,13 @@ pub fn get_iterm_profiles() -> Result<Vec<ITermProfile>, String> {
         return Err("iTerm2 preferences not found".to_string());
     }
 
-    let plist_value: plist::Value = plist::from_file(&plist_path)
-        .map_err(|e| format!("Failed to read iTerm2 plist: {}", e))?;
+    let plist_value: plist::Value =
+        plist::from_file(&plist_path).map_err(|e| format!("Failed to read iTerm2 plist: {}", e))?;
 
-    let dict = plist_value.as_dictionary()
-        .ok_or("Invalid plist format")?;
+    let dict = plist_value.as_dictionary().ok_or("Invalid plist format")?;
 
-    let bookmarks = dict.get("New Bookmarks")
+    let bookmarks = dict
+        .get("New Bookmarks")
         .and_then(|v| v.as_array())
         .ok_or("No profiles found in iTerm2")?;
 
@@ -34,26 +34,33 @@ pub fn get_iterm_profiles() -> Result<Vec<ITermProfile>, String> {
 
     for bookmark in bookmarks {
         if let Some(bookmark_dict) = bookmark.as_dictionary() {
-            let name = bookmark_dict.get("Name")
+            let name = bookmark_dict
+                .get("Name")
                 .and_then(|v| v.as_string())
                 .unwrap_or("Unnamed")
                 .to_string();
 
-            let guid = bookmark_dict.get("Guid")
+            let guid = bookmark_dict
+                .get("Guid")
                 .and_then(|v| v.as_string())
                 .unwrap_or("")
                 .to_string();
 
             // Get command - prefer "Initial Text" (Send Text at Start) over "Command"
-            let command = bookmark_dict.get("Initial Text")
+            let command = bookmark_dict
+                .get("Initial Text")
                 .and_then(|v| v.as_string())
                 .filter(|s| !s.is_empty())
-                .or_else(|| bookmark_dict.get("Command")
-                    .and_then(|v| v.as_string())
-                    .filter(|s| !s.is_empty()))
+                .or_else(|| {
+                    bookmark_dict
+                        .get("Command")
+                        .and_then(|v| v.as_string())
+                        .filter(|s| !s.is_empty())
+                })
                 .map(|s| s.to_string());
 
-            let working_directory = bookmark_dict.get("Working Directory")
+            let working_directory = bookmark_dict
+                .get("Working Directory")
                 .and_then(|v| v.as_string())
                 .filter(|s| !s.is_empty())
                 .map(|s| s.to_string());
