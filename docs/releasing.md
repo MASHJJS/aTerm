@@ -8,6 +8,19 @@
 
 ## Setup (One-time)
 
+### Tauri Signing Key
+
+Generate an Ed25519 keypair for update bundle signing:
+
+```bash
+mkdir -p ~/.tauri
+npx tauri signer generate -w ~/.tauri/aterm.key
+```
+
+The public key is embedded in `src-tauri/tauri.conf.json`. If you regenerate the key, update the `pubkey` field there too.
+
+### Apple Credentials
+
 Create `src-tauri/.env.local` with your Apple credentials:
 
 ```bash
@@ -40,18 +53,23 @@ To get these values:
    ```
 
 The script will:
-- Build the app in release mode
+- Load the Tauri signing key from `~/.tauri/aterm.key`
+- Build the app in release mode (generates DMG + update bundle)
 - Sign with your Developer ID certificate
 - Submit to Apple for notarization
 - Wait for notarization to complete
 - Staple the notarization ticket to the DMG
-- Create a GitHub release with the DMG attached
+- Generate `latest.json` for the auto-updater
+- Create a GitHub release with the DMG, update bundle, and `latest.json` attached
 
 ## Output
 
 Builds are located at:
 - App bundle: `src-tauri/target/release/bundle/macos/aTerm.app`
 - DMG installer: `src-tauri/target/release/bundle/dmg/aTerm_X.Y.Z_aarch64.dmg`
+- Update bundle: `src-tauri/target/release/bundle/macos/aTerm.app.tar.gz`
+- Update signature: `src-tauri/target/release/bundle/macos/aTerm.app.tar.gz.sig`
+- Update manifest: `src-tauri/target/release/bundle/macos/latest.json`
 
 ## Troubleshooting
 
