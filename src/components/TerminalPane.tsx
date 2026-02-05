@@ -563,7 +563,20 @@ export function TerminalPane({
         onTriggerRenameComplete={onTriggerRenameComplete}
         dragHandleProps={dragHandleProps}
       />
-      <div ref={containerRef} className="flex-1 p-2 overflow-hidden" />
+      <div
+        ref={containerRef}
+        className="flex-1 p-2 overflow-hidden"
+        onMouseDownCapture={(e) => {
+          // When pane is not focused, intercept first click to just focus
+          // without sending mouse event to terminal (prevents tmux clipboard issues)
+          if (!isFocused) {
+            e.stopPropagation();
+            e.preventDefault();
+            onFocus?.();
+            terminalRef.current?.focus();
+          }
+        }}
+      />
       {isSearchOpen && (
         <SearchOverlay
           searchAddon={searchAddonRef.current}
