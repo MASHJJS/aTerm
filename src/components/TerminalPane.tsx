@@ -25,6 +25,21 @@ import {
 import "@xterm/xterm/css/xterm.css";
 
 /**
+ * Filter out terminal response sequences from xterm.js onData before writing to PTY.
+ * These are responses to queries (background color, cursor position, etc.) that
+ * leak as visible text when the shell isn't actively consuming them.
+ */
+function filterTerminalResponses(data: string): string {
+  return data
+    // OSC responses: \x1b]11;rgb:...\x1b\\ or \x1b]11;rgb:...\x07 (background/foreground color)
+    .replace(/\x1b\]\d+;[^\x07\x1b]*(?:\x1b\\|\x07)/g, "")
+    // CPR (Cursor Position Report): \x1b[<digits>;<digits>R
+    .replace(/\x1b\[\d+;\d+R/g, "")
+    // DA (Device Attributes) response: \x1b[?...c
+    .replace(/\x1b\[\?[\d;]*c/g, "");
+}
+
+/**
  * Strip ANSI escape codes from terminal output for pattern matching.
  */
 function stripAnsi(s: string): string {
@@ -256,7 +271,10 @@ export function TerminalPane({
       });
 
       terminal.onData((data) => {
-        invoke("write_pty", { id, data }).catch(console.error);
+        const filtered = filterTerminalResponses(data);
+        if (filtered) {
+          invoke("write_pty", { id, data: filtered }).catch(console.error);
+        }
       });
     }
 
