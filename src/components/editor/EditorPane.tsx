@@ -5,12 +5,18 @@ import { EditorTabs } from "./EditorTabs";
 import { CodeEditor } from "./CodeEditor";
 import { useFileManager } from "../../hooks/useFileManager";
 
+const DEFAULT_FONT_SIZE = 13;
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 24;
+
 interface Props {
   id: string;
   title: string;
   cwd: string;
   accentColor?: string;
   projectColor?: string;
+  fontSize?: number;
+  onFontSizeChange?: (size: number) => void;
   onFocus?: () => void;
   isFocused?: boolean;
   onClose?: () => void;
@@ -32,6 +38,8 @@ export function EditorPane({
   cwd,
   accentColor,
   projectColor,
+  fontSize: savedFontSize,
+  onFontSizeChange,
   onFocus,
   isFocused,
   onClose,
@@ -46,6 +54,7 @@ export function EditorPane({
   const [explorerWidth, setExplorerWidth] = useState(DEFAULT_EXPLORER_WIDTH);
   const [isDraggingResize, setIsDraggingResize] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [fontSize, setFontSize] = useState(savedFontSize ?? DEFAULT_FONT_SIZE);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -147,11 +156,31 @@ export function EditorPane({
           handleCloseFile(activeFilePath);
         }
       }
+
+      // Cmd++ to increase font size
+      if (e.metaKey && (e.key === "+" || e.key === "=")) {
+        e.preventDefault();
+        setFontSize((prev) => {
+          const newSize = Math.min(prev + 1, MAX_FONT_SIZE);
+          onFontSizeChange?.(newSize);
+          return newSize;
+        });
+      }
+
+      // Cmd+- to decrease font size
+      if (e.metaKey && e.key === "-") {
+        e.preventDefault();
+        setFontSize((prev) => {
+          const newSize = Math.max(prev - 1, MIN_FONT_SIZE);
+          onFontSizeChange?.(newSize);
+          return newSize;
+        });
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isFocused, activeFilePath, handleSave, handleCloseFile]);
+  }, [isFocused, activeFilePath, handleSave, handleCloseFile, onFontSizeChange]);
 
   // Status bar info
   const statusInfo = activeFile
@@ -214,6 +243,7 @@ export function EditorPane({
                 language={activeFile.language}
                 filePath={activeFile.path}
                 projectRoot={cwd}
+                fontSize={fontSize}
                 onChange={(value) => updateContent(activeFile.path, value)}
                 onSave={handleSave}
               />

@@ -7,11 +7,12 @@ interface Props {
   language: string;
   filePath: string;
   projectRoot: string;
+  fontSize?: number;
   onChange: (value: string) => void;
   onSave?: () => void;
 }
 
-export function CodeEditor({ content, language, filePath, projectRoot, onChange, onSave }: Props) {
+export function CodeEditor({ content, language, filePath, projectRoot, fontSize = 13, onChange, onSave }: Props) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
   const handleBeforeMount: BeforeMount = (monaco) => {
@@ -97,7 +98,7 @@ export function CodeEditor({ content, language, filePath, projectRoot, onChange,
       onChange={handleChange}
       onMount={handleMount}
       options={{
-        fontSize: 13,
+        fontSize,
         fontFamily: "SF Mono, Menlo, Monaco, monospace",
         minimap: { enabled: false },
         scrollBeyondLastLine: false,

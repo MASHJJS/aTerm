@@ -196,6 +196,8 @@ export function SortablePane({
           cwd={project.path}
           accentColor={profile.color}
           projectColor={project.color}
+          fontSize={fontSize}
+          onFontSizeChange={onFontSizeChange}
           onFocus={onFocus}
           isFocused={isFocused}
           onClose={onClosePane}
