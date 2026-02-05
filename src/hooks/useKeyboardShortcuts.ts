@@ -11,6 +11,7 @@ interface UseKeyboardShortcutsProps {
   onAddGitPane?: () => void;
   onOpenFileSearch?: () => void;
   onOpenNewTerminalModal?: () => void;
+  onToggleZenMode?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -23,6 +24,7 @@ export function useKeyboardShortcuts({
   onAddGitPane,
   onOpenFileSearch,
   onOpenNewTerminalModal,
+  onToggleZenMode,
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -74,9 +76,16 @@ export function useKeyboardShortcuts({
           onOpenNewTerminalModal();
         }
       }
+      // Shift+Cmd+Z: Toggle zen mode
+      if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "z") {
+        if (onToggleZenMode) {
+          e.preventDefault();
+          onToggleZenMode();
+        }
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [projects, selectedProject, onSelectProject, onToggleSidebar, onOpenScratchNotes, onAddEditorPane, onAddGitPane, onOpenFileSearch, onOpenNewTerminalModal]);
+  }, [projects, selectedProject, onSelectProject, onToggleSidebar, onOpenScratchNotes, onAddEditorPane, onAddGitPane, onOpenFileSearch, onOpenNewTerminalModal, onToggleZenMode]);
 }

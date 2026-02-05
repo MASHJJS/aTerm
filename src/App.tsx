@@ -82,6 +82,7 @@ export default function App() {
   const [pendingFileToOpen, setPendingFileToOpen] = useState<string | null>(null);
   const [showNewTerminalModal, setShowNewTerminalModal] = useState(false);
   const [homeDir, setHomeDir] = useState<string>("");
+  const [zenMode, setZenMode] = useState(false);
 
   // Wrap handleSelectProject to also clear selectedTask and deselect terminal
   const handleSelectProject = useCallback((project: ProjectConfig | null) => {
@@ -107,6 +108,7 @@ export default function App() {
     onAddGitPane: handleAddGitPane,
     onOpenFileSearch: () => setShowFileSearch(true),
     onOpenNewTerminalModal: () => setShowNewTerminalModal(true),
+    onToggleZenMode: () => setZenMode((prev) => !prev),
   });
 
   // Handler for detaching panes to separate windows
@@ -236,7 +238,7 @@ export default function App() {
         onCancel={() => setShowExitDialog(false)}
       />
       <div style={styles.mainArea}>
-        {sidebarVisible && (
+        {sidebarVisible && !zenMode && (
           <ProjectSidebar
             config={config}
             selectedProject={selectedProject}
@@ -337,11 +339,13 @@ export default function App() {
         onClose={() => setCreateTaskProject(null)}
         onTaskCreated={handleTaskCreated}
       />
-      <StatusBar
-        selectedProject={selectedProject}
-        selectedTask={selectedTask}
-        onOpenGitPane={handleOpenGitFromStatusBar}
-      />
+      {!zenMode && (
+        <StatusBar
+          selectedProject={selectedProject}
+          selectedTask={selectedTask}
+          onOpenGitPane={handleOpenGitFromStatusBar}
+        />
+      )}
       {/* Global file search modal */}
       {selectedProject && (
         <FileSearchModal
