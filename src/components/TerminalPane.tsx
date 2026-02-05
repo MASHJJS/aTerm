@@ -24,22 +24,6 @@ import {
 } from "./terminal-pane";
 import "@xterm/xterm/css/xterm.css";
 
-/**
- * Filter out terminal response sequences from xterm.js onData before writing to PTY.
- *
- * NOTE: We intentionally do NOT filter OSC responses (like OSC 11 background color).
- * Applications like supabase CLI use lipgloss which queries terminal colors and
- * waits for a response. Filtering these causes ~2 second timeouts.
- *
- * We only filter cursor/device reports that shells query but don't wait for.
- */
-function filterTerminalResponses(data: string): string {
-  return data
-    // CPR (Cursor Position Report): \x1b[<digits>;<digits>R
-    .replace(/\x1b\[\d+;\d+R/g, "")
-    // DA (Device Attributes) response: \x1b[?...c
-    .replace(/\x1b\[\?[\d;]*c/g, "");
-}
 
 /**
  * Strip ANSI escape codes from terminal output for pattern matching.
@@ -277,10 +261,7 @@ export function TerminalPane({
       });
 
       terminal.onData((data) => {
-        const filtered = filterTerminalResponses(data);
-        if (filtered) {
-          invoke("write_pty", { id, data: filtered }).catch(console.error);
-        }
+        invoke("write_pty", { id, data }).catch(console.error);
       });
     }
 
