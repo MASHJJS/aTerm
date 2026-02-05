@@ -138,6 +138,16 @@ export function EditorPane({
     document.addEventListener("mouseup", onMouseUp);
   }, [explorerWidth]);
 
+  // Auto-focus when pane becomes active
+  useEffect(() => {
+    if (isFocused && containerRef.current) {
+      const timeout = setTimeout(() => {
+        containerRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [isFocused]);
+
   // Keyboard shortcuts (Cmd+P is handled globally in App.tsx)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -190,7 +200,8 @@ export function EditorPane({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col flex-1 min-h-0 bg-background rounded-lg border border-border overflow-hidden"
+      tabIndex={-1}
+      className="flex flex-col flex-1 min-h-0 bg-background rounded-lg border border-border overflow-hidden outline-none"
       onClick={onFocus}
     >
       <PaneHeader

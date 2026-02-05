@@ -45,6 +45,17 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
   const [editOriginalContent, setEditOriginalContent] = useState<string>("");
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const pollRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus when pane becomes active
+  useEffect(() => {
+    if (isFocused && containerRef.current) {
+      const timeout = setTimeout(() => {
+        containerRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [isFocused]);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -268,7 +279,7 @@ export function GitPane({ title, cwd, accentColor, projectColor, onFocus, isFocu
   );
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-background rounded-lg border border-border overflow-hidden" onClick={onFocus}>
+    <div ref={containerRef} tabIndex={-1} className="flex flex-col flex-1 min-h-0 bg-background rounded-lg border border-border overflow-hidden outline-none" onClick={onFocus}>
       <PaneHeader
         title={title}
         accentColor={accentColor}

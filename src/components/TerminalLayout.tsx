@@ -37,6 +37,8 @@ interface Props {
   isProjectActive?: boolean;
   pendingFileToOpen?: string | null;
   onPendingFileOpened?: () => void;
+  pendingFocusPaneId?: string | null;
+  onPendingFocusConsumed?: () => void;
 }
 
 export function TerminalLayout({
@@ -55,6 +57,8 @@ export function TerminalLayout({
   isProjectActive = true,
   pendingFileToOpen,
   onPendingFileOpened,
+  pendingFocusPaneId,
+  onPendingFocusConsumed,
 }: Props) {
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
   const [maximizedPaneId, setMaximizedPaneId] = useState<string | null>(null);
@@ -89,6 +93,14 @@ export function TerminalLayout({
       }
     }
   }, [allPaneIds, maximizedPaneId, focusedPaneId, minimizedPaneIds]);
+
+  // Focus a pane when requested externally (e.g., after adding git/editor pane)
+  useEffect(() => {
+    if (pendingFocusPaneId && allPaneIds.includes(pendingFocusPaneId)) {
+      setFocusedPaneId(pendingFocusPaneId);
+      onPendingFocusConsumed?.();
+    }
+  }, [pendingFocusPaneId, allPaneIds]);
 
   // Cycle to next/previous pane (skip minimized panes)
   function cyclePanes(direction: "next" | "prev") {

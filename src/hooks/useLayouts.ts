@@ -11,6 +11,7 @@ interface UseLayoutsProps {
 export function useLayouts({ config, updateConfig, selectedProject }: UseLayoutsProps) {
   const [openedProjects, setOpenedProjects] = useState<Set<string>>(new Set());
   const [runtimeLayouts, setRuntimeLayouts] = useState<Record<string, Layout>>({});
+  const [pendingFocusPaneId, setPendingFocusPaneId] = useState<string | null>(null);
 
   // Initialize runtime layout when project is first opened
   useEffect(() => {
@@ -156,6 +157,7 @@ export function useLayouts({ config, updateConfig, selectedProject }: UseLayouts
       });
 
       handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+      setPendingFocusPaneId(newPane.id);
     }
   }
 
@@ -207,6 +209,7 @@ export function useLayouts({ config, updateConfig, selectedProject }: UseLayouts
       });
 
       handleRuntimeLayoutChange(selectedProject.id, { ...layout, rows: newRows });
+      setPendingFocusPaneId(newPane.id);
     }
   }
 
@@ -261,6 +264,8 @@ export function useLayouts({ config, updateConfig, selectedProject }: UseLayouts
   return {
     openedProjects,
     runtimeLayouts,
+    pendingFocusPaneId,
+    clearPendingFocusPaneId: () => setPendingFocusPaneId(null),
     handleRuntimeLayoutChange,
     handlePersistentLayoutChange,
     handleSaveWindowArrangement,

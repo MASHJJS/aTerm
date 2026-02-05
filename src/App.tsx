@@ -53,6 +53,8 @@ export default function App() {
   const {
     openedProjects,
     runtimeLayouts,
+    pendingFocusPaneId,
+    clearPendingFocusPaneId,
     handleRuntimeLayoutChange,
     handlePersistentLayoutChange,
     handleSaveWindowArrangement,
@@ -316,6 +318,8 @@ export default function App() {
                   isProjectActive={isActive}
                   pendingFileToOpen={isActive ? pendingFileToOpen : null}
                   onPendingFileOpened={() => setPendingFileToOpen(null)}
+                  pendingFocusPaneId={isActive ? pendingFocusPaneId : null}
+                  onPendingFocusConsumed={clearPendingFocusPaneId}
                 />
               </div>
             );
