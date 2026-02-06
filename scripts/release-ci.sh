@@ -24,11 +24,14 @@ fi
 echo -e "${YELLOW}Bumping ${CURRENT} → ${NEW_VERSION}${NC}"
 
 # Update version in both files
-sed -i '' "s/\"version\": \"${CURRENT}\"/\"version\": \"${NEW_VERSION}\"/" src-tauri/tauri.conf.json
-sed -i '' "s/^version = \"${CURRENT}\"/version = \"${NEW_VERSION}\"/" src-tauri/Cargo.toml
+sed -i.bak "s/\"version\": \"${CURRENT}\"/\"version\": \"${NEW_VERSION}\"/" src-tauri/tauri.conf.json && rm -f src-tauri/tauri.conf.json.bak
+sed -i.bak "s/^version = \"${CURRENT}\"/version = \"${NEW_VERSION}\"/" src-tauri/Cargo.toml && rm -f src-tauri/Cargo.toml.bak
+
+# Update Cargo.lock
+(cd src-tauri && cargo generate-lockfile 2>/dev/null || true)
 
 # Commit and push
-git add src-tauri/tauri.conf.json src-tauri/Cargo.toml
+git add src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
 git commit -m "chore: bump version to ${NEW_VERSION}"
 git push
 
