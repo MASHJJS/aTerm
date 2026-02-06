@@ -69,8 +69,8 @@ export function useKeyboardShortcuts({
           onOpenFileSearch();
         }
       }
-      // Cmd+N: Open new terminal modal
-      if (e.metaKey && !e.shiftKey && e.key.toLowerCase() === "n") {
+      // Cmd+N or Cmd+T: Open new terminal modal
+      if (e.metaKey && !e.shiftKey && (e.key.toLowerCase() === "n" || e.key.toLowerCase() === "t")) {
         if (onOpenNewTerminalModal) {
           e.preventDefault();
           onOpenNewTerminalModal();
